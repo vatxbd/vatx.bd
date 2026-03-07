@@ -17,10 +17,13 @@ import {
   Briefcase,
   User,
   Building2,
+  ArrowRight,
   ArrowRightLeft,
   ShieldCheck,
   Ship,
   Search,
+  Shield,
+  Book,
   AlertCircle,
   CheckCircle2,
   Sparkles,
@@ -48,10 +51,17 @@ import {
   Cpu,
   Fingerprint,
   Ticket,
-  Shield,
   FileSearch,
-  Zap
+  Zap,
+  Image as ImageIcon,
+  Camera,
+  Upload,
+  File,
+  Loader2,
+  Lock,
+  Menu
 } from 'lucide-react';
+import { useDropzone } from 'react-dropzone';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   BarChart, 
@@ -145,7 +155,7 @@ function SectionGuide({ title, steps }: { title: string, steps: string[] }) {
   );
 }
 
-type Tab = 'dashboard' | 'vat' | 'tax' | 'tariff' | 'manifest' | 'reports' | 'blog' | 'tools' | 'ai' | 'invoice' | 'history' | 'notices' | 'rebate' | 'hscode' | 'subscription' | 'crypto-tax' | 'blockchain-verify' | 'tokenized-cert';
+type Tab = 'dashboard' | 'vat' | 'tax' | 'tariff' | 'manifest' | 'reports' | 'blog' | 'tools' | 'ai' | 'invoice' | 'history' | 'notices' | 'rebate' | 'hscode' | 'subscription' | 'crypto-tax' | 'blockchain-verify' | 'tokenized-cert' | 'tax-advisory' | 'zakat' | 'final-tax' | 'developer' | 'documents';
 
 interface TaxNotice {
   id: number;
@@ -165,6 +175,29 @@ export default function App() {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showSearchResults, setShowSearchResults] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const [isDeveloper, setIsDeveloper] = useState(false);
+  const [logoClicks, setLogoClicks] = useState(0);
+
+  const handleLogoClick = () => {
+    setLogoClicks(prev => {
+      const next = prev + 1;
+      if (next === 5) {
+        setIsDeveloper(true);
+        return 0;
+      }
+      return next;
+    });
+  };
+
+  useEffect(() => {
+    const handleChangeTab = (e: any) => {
+      setActiveTab(e.detail);
+    };
+    window.addEventListener('changeTab', handleChangeTab);
+    return () => window.removeEventListener('changeTab', handleChangeTab);
+  }, []);
 
   useEffect(() => {
     fetchHistory();
@@ -224,11 +257,138 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FBFBFA] text-zinc-900 font-sans selection:bg-brand-100 selection:text-brand-900">
-      {/* Sidebar */}
+    <div className="min-h-screen bg-[#FBFBFA] text-zinc-900 font-sans selection:bg-brand-100 selection:text-brand-900 pb-20 md:pb-0">
+      {/* Mobile Header */}
+      <header className="fixed top-0 left-0 right-0 h-16 bg-white/80 backdrop-blur-xl border-b border-zinc-100 z-[60] flex items-center justify-between px-6 md:hidden">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-zinc-900 rounded-xl flex items-center justify-center text-white shadow-lg">
+            <ShieldCheck size={18} />
+          </div>
+          <span className="text-lg font-bold tracking-tight font-display">VATX.BD</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={() => setShowNoticesDropdown(!showNoticesDropdown)}
+            className="p-2 text-zinc-500 relative"
+          >
+            <Bell size={20} />
+            {notices.length > 0 && <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white" />}
+          </button>
+          <button 
+            onClick={() => setIsMobileMenuOpen(true)}
+            className="p-2 text-zinc-900"
+          >
+            <Menu size={24} />
+          </button>
+        </div>
+      </header>
+
+      {/* Mobile Menu Drawer */}
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="fixed inset-0 bg-zinc-900/60 backdrop-blur-sm z-[100] md:hidden"
+            />
+            <motion.aside 
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="fixed left-0 top-0 bottom-0 w-[85%] max-w-sm bg-white z-[110] md:hidden flex flex-col shadow-2xl"
+            >
+              <div className="p-8 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-zinc-900 rounded-2xl flex items-center justify-center text-white shadow-xl">
+                    <ShieldCheck size={22} />
+                  </div>
+                  <span className="text-xl font-bold font-display">VATX.BD</span>
+                </div>
+                <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 text-zinc-400">
+                  <X size={24} />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto px-6 pb-12 custom-scrollbar">
+                <nav className="space-y-8">
+                  {isDeveloper && (
+                    <div>
+                      <p className="px-4 text-[10px] font-black text-brand-600 uppercase tracking-widest mb-4">Developer Mode</p>
+                      <div className="space-y-1">
+                        <NavItem icon={<Cpu size={18} />} label="Control Panel" active={activeTab === 'developer'} onClick={() => { setActiveTab('developer'); setIsMobileMenuOpen(false); }} />
+                      </div>
+                    </div>
+                  )}
+                  <div>
+                    <p className="px-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-4">Main Menu</p>
+                    <div className="space-y-1">
+                      <NavItem icon={<BarChart3 size={18} />} label="Dashboard" active={activeTab === 'dashboard'} onClick={() => { setActiveTab('dashboard'); setIsMobileMenuOpen(false); }} />
+                      <NavItem icon={<FileSearch size={18} />} label="Document Centre" active={activeTab === 'documents'} onClick={() => { setActiveTab('documents'); setIsMobileMenuOpen(false); }} />
+                      <NavItem icon={<Receipt size={18} />} label="VAT Calculator" active={activeTab === 'vat'} onClick={() => { setActiveTab('vat'); setIsMobileMenuOpen(false); }} />
+                      <NavItem icon={<Calculator size={18} />} label="Tax Calculator" active={activeTab === 'tax'} onClick={() => { setActiveTab('tax'); setIsMobileMenuOpen(false); }} />
+                      <NavItem icon={<Shield size={18} />} label="চূড়ান্ত ট্যাক্স ক্যালকুলেশন" active={activeTab === 'final-tax'} onClick={() => { setActiveTab('final-tax'); setIsMobileMenuOpen(false); }} />
+                    </div>
+                  </div>
+                  <div>
+                    <p className="px-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-4">Intelligence</p>
+                    <div className="space-y-1">
+                      <NavItem icon={<Bot size={18} />} label="AI Tax Advisor" active={activeTab === 'ai'} onClick={() => { setActiveTab('ai'); setIsMobileMenuOpen(false); }} />
+                      <NavItem icon={<TrendingUp size={18} />} label="Tax Rebate Planner" active={activeTab === 'rebate'} onClick={() => { setActiveTab('rebate'); setIsMobileMenuOpen(false); }} />
+                      <NavItem icon={<Search size={18} />} label="HS Code Finder" active={activeTab === 'hscode'} onClick={() => { setActiveTab('hscode'); setIsMobileMenuOpen(false); }} />
+                      <NavItem icon={<Sparkles size={18} />} label="Tax Advisory" active={activeTab === 'tax-advisory'} onClick={() => { setActiveTab('tax-advisory'); setIsMobileMenuOpen(false); }} />
+                    </div>
+                  </div>
+                  <div>
+                    <p className="px-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-4">Business Tools</p>
+                    <div className="space-y-1">
+                      <NavItem icon={<Ship size={18} />} label="Tariff Calculator" active={activeTab === 'tariff'} onClick={() => { setActiveTab('tariff'); setIsMobileMenuOpen(false); }} />
+                      <NavItem icon={<ClipboardCheck size={18} />} label="Manifest & Cargo" active={activeTab === 'manifest'} onClick={() => { setActiveTab('manifest'); setIsMobileMenuOpen(false); }} />
+                      <NavItem icon={<Receipt size={18} />} label="Invoice Generator" active={activeTab === 'invoice'} onClick={() => { setActiveTab('invoice'); setIsMobileMenuOpen(false); }} />
+                    </div>
+                  </div>
+                </nav>
+              </div>
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Mobile Bottom Navigation */}
+      <nav className="mobile-bottom-nav">
+        <button onClick={() => setActiveTab('dashboard')} className={cn("mobile-nav-item", activeTab === 'dashboard' && "active")}>
+          <BarChart3 size={22} />
+          <span className="text-[10px] font-bold">Home</span>
+        </button>
+        <button onClick={() => setActiveTab('vat')} className={cn("mobile-nav-item", activeTab === 'vat' && "active")}>
+          <Receipt size={22} />
+          <span className="text-[10px] font-bold">VAT</span>
+        </button>
+        <button onClick={() => setActiveTab('ai')} className={cn("mobile-nav-item", activeTab === 'ai' && "active")}>
+          <div className="w-12 h-12 bg-brand-600 rounded-full flex items-center justify-center text-white -mt-8 shadow-lg shadow-brand-600/30 border-4 border-white">
+            <Bot size={24} />
+          </div>
+          <span className="text-[10px] font-bold">AI Bot</span>
+        </button>
+        <button onClick={() => setActiveTab('tax')} className={cn("mobile-nav-item", activeTab === 'tax' && "active")}>
+          <Calculator size={22} />
+          <span className="text-[10px] font-bold">Tax</span>
+        </button>
+        <button onClick={() => setActiveTab('tools')} className={cn("mobile-nav-item", activeTab === 'tools' && "active")}>
+          <Layout size={22} />
+          <span className="text-[10px] font-bold">Tools</span>
+        </button>
+      </nav>
+
+      {/* Sidebar (Desktop) */}
       <aside className="fixed left-0 top-0 h-full w-72 bg-white border-r border-zinc-100 z-50 hidden md:flex flex-col">
-        <div className="p-8 flex items-center gap-3">
-          <div className="w-11 h-11 bg-zinc-900 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-zinc-200 rotate-3 hover:rotate-0 transition-transform duration-300">
+        <div 
+          className="p-8 flex items-center gap-3 cursor-pointer group"
+          onClick={handleLogoClick}
+        >
+          <div className="w-11 h-11 bg-zinc-900 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-zinc-200 rotate-3 group-hover:rotate-0 transition-transform duration-300">
             <ShieldCheck size={24} />
           </div>
           <div className="flex flex-col">
@@ -238,6 +398,17 @@ export default function App() {
         </div>
 
         <nav className="flex-1 mt-4 px-6 space-y-1 overflow-y-auto custom-scrollbar">
+          {isDeveloper && (
+            <div className="pb-4 mb-4 border-b border-brand-100">
+              <p className="px-4 text-[10px] font-black text-brand-600 uppercase tracking-widest mb-4">Developer Mode</p>
+              <NavItem 
+                icon={<Cpu size={18} />} 
+                label="Control Panel" 
+                active={activeTab === 'developer'} 
+                onClick={() => setActiveTab('developer')} 
+              />
+            </div>
+          )}
           <div className="pb-4">
             <p className="px-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-4">Main Menu</p>
             <NavItem 
@@ -245,6 +416,12 @@ export default function App() {
               label="Dashboard" 
               active={activeTab === 'dashboard'} 
               onClick={() => setActiveTab('dashboard')} 
+            />
+            <NavItem 
+              icon={<FileSearch size={18} />} 
+              label="Document Centre" 
+              active={activeTab === 'documents'} 
+              onClick={() => setActiveTab('documents')} 
             />
             <NavItem 
               icon={<Receipt size={18} />} 
@@ -257,6 +434,12 @@ export default function App() {
               label="Tax Calculator" 
               active={activeTab === 'tax'} 
               onClick={() => setActiveTab('tax')} 
+            />
+            <NavItem 
+              icon={<Shield size={18} />} 
+              label="চূড়ান্ত ট্যাক্স ক্যালকুলেশন" 
+              active={activeTab === 'final-tax'} 
+              onClick={() => setActiveTab('final-tax')} 
             />
           </div>
 
@@ -301,6 +484,18 @@ export default function App() {
               label="HS Code Finder" 
               active={activeTab === 'hscode'} 
               onClick={() => setActiveTab('hscode')} 
+            />
+            <NavItem 
+              icon={<Sparkles size={18} />} 
+              label="Tax Advisory" 
+              active={activeTab === 'tax-advisory'} 
+              onClick={() => setActiveTab('tax-advisory')} 
+            />
+            <NavItem 
+              icon={<Coins size={18} />} 
+              label="Zakat Calculator" 
+              active={activeTab === 'zakat'} 
+              onClick={() => setActiveTab('zakat')} 
             />
           </div>
 
@@ -370,15 +565,16 @@ export default function App() {
       </aside>
 
       {/* Main Content */}
-      <main className="md:ml-72 p-8 lg:p-12 min-h-screen">
-        <header className="flex flex-col lg:flex-row justify-between lg:items-center gap-6 mb-12">
+      <main className="md:ml-72 p-6 md:p-8 lg:p-12 min-h-screen pt-24 md:pt-12">
+        <header className="flex flex-col lg:flex-row justify-between lg:items-center gap-6 mb-12 hidden md:flex">
           <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-[10px] font-black text-brand-600 uppercase tracking-[0.3em]">Compliance Platform</span>
-              <div className="w-1 h-1 rounded-full bg-zinc-300" />
-              <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">v2.4.0</span>
+            <div className="flex items-center gap-2 mb-2">
+              <div className="px-2 py-0.5 bg-brand-500 text-white text-[8px] font-black uppercase tracking-widest rounded-md">Live</div>
+              <span className="text-[10px] font-black text-brand-600 uppercase tracking-[0.3em]">Smart Compliance</span>
             </div>
-            <h1 className="text-4xl font-bold tracking-tight font-display capitalize">{activeTab}</h1>
+            <h1 className="text-4xl md:text-5xl font-black tracking-tighter font-display capitalize bg-gradient-to-r from-zinc-900 to-zinc-500 bg-clip-text text-transparent">
+              {activeTab.replace('-', ' ')}
+            </h1>
           </div>
           
           <div className="flex items-center gap-4">
@@ -544,6 +740,11 @@ export default function App() {
             {activeTab === 'crypto-tax' && <CryptoTaxAdvisory />}
             {activeTab === 'blockchain-verify' && <BlockchainVerification />}
             {activeTab === 'tokenized-cert' && <TokenizedCertificates />}
+            {activeTab === 'tax-advisory' && <IncomeTaxAdvisory />}
+            {activeTab === 'final-tax' && <FinalTaxCalculator />}
+            {activeTab === 'zakat' && <ZakatCalculator />}
+            {activeTab === 'developer' && isDeveloper && <DeveloperPanel notices={notices} setNotices={setNotices} />}
+            {activeTab === 'documents' && <DocumentCentre />}
           </motion.div>
         </AnimatePresence>
       </main>
@@ -556,26 +757,534 @@ function NavItem({ icon, label, active, onClick }: { icon: React.ReactNode, labe
     <button 
       onClick={onClick}
       className={cn(
-        "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 group relative",
+        "w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-sm font-black transition-all duration-300 group relative overflow-hidden",
         active 
-          ? "bg-brand-50 text-brand-700 shadow-sm" 
+          ? "bg-zinc-900 text-white shadow-xl shadow-zinc-900/10 scale-[1.02]" 
           : "text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900"
       )}
     >
       <span className={cn(
-        "transition-colors duration-200",
-        active ? "text-brand-600" : "text-zinc-400 group-hover:text-zinc-600"
+        "transition-all duration-300 relative z-10",
+        active ? "text-brand-400 scale-110" : "text-zinc-400 group-hover:text-zinc-900 group-hover:scale-110"
       )}>
         {icon}
       </span>
-      {label}
+      <span className="relative z-10 tracking-tight">{label}</span>
       {active && (
         <motion.div 
           layoutId="active-pill"
-          className="absolute left-0 w-1 h-6 bg-brand-500 rounded-r-full"
+          className="absolute inset-0 bg-zinc-900 -z-0"
+          transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+        />
+      )}
+      {active && (
+        <motion.div 
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className="absolute right-4 w-1.5 h-1.5 bg-brand-400 rounded-full z-10"
         />
       )}
     </button>
+  );
+}
+
+function DocumentCentre() {
+  const [files, setFiles] = useState<{ 
+    file: File; 
+    ocrResult?: string; 
+    structuredData?: any;
+    status: 'idle' | 'uploading' | 'processing' | 'done' | 'error' 
+  }[]>([]);
+  const [activeFileIndex, setActiveFileIndex] = useState<number | null>(null);
+
+  const onDrop = (acceptedFiles: File[]) => {
+    const newFiles = acceptedFiles.map(file => ({ file, status: 'idle' as const }));
+    setFiles(prev => [...prev, ...newFiles]);
+  };
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({ 
+    onDrop,
+    accept: {
+      'image/*': ['.jpeg', '.jpg', '.png'],
+      'application/pdf': ['.pdf']
+    }
+  } as any);
+
+  const processOCR = async (index: number) => {
+    const fileData = files[index];
+    if (!fileData || fileData.status === 'processing') return;
+
+    setFiles(prev => {
+      const next = [...prev];
+      next[index].status = 'processing';
+      return next;
+    });
+    setActiveFileIndex(index);
+
+    try {
+      const reader = new FileReader();
+      const base64Promise = new Promise<string>((resolve) => {
+        reader.onload = () => {
+          const base64 = (reader.result as string).split(',')[1];
+          resolve(base64);
+        };
+      });
+      reader.readAsDataURL(fileData.file);
+      const base64 = await base64Promise;
+
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: [
+          {
+            inlineData: {
+              mimeType: fileData.file.type,
+              data: base64
+            }
+          },
+          {
+            text: `Extract structured data from this document for Bangladesh Tax (NBR) filing. 
+            Focus on: 
+            1. Document Type (Invoice, Mushak 6.3, Salary Certificate, Bank Statement)
+            2. TIN/BIN numbers
+            3. Total Amount (BDT)
+            4. Tax/VAT Amount
+            5. Date of Issue
+            6. Vendor/Company Name
+            7. Address
+            
+            Return the data in a clean JSON format suitable for form automation.`
+          }
+        ],
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: "object",
+            properties: {
+              documentType: { type: "string" },
+              vendorName: { type: "string" },
+              tin: { type: "string" },
+              bin: { type: "string" },
+              date: { type: "string" },
+              totalAmount: { type: "number" },
+              taxAmount: { type: "number" },
+              vatAmount: { type: "number" },
+              currency: { type: "string" },
+              summary: { type: "string" },
+              confidence: { type: "number" }
+            },
+            required: ["documentType", "totalAmount"]
+          }
+        }
+      });
+
+      const structuredData = JSON.parse(response.text || "{}");
+      setFiles(prev => {
+        const next = [...prev];
+        next[index].status = 'done';
+        next[index].structuredData = structuredData;
+        next[index].ocrResult = response.text;
+        return next;
+      });
+    } catch (err) {
+      console.error('OCR failed', err);
+      setFiles(prev => {
+        const next = [...prev];
+        next[index].status = 'error';
+        return next;
+      });
+    }
+  };
+
+  const generateNBRScript = (data: any) => {
+    if (!data) return "";
+    return `
+// NBR TRMS Auto-Fill Script
+// Copy and paste this into the browser console at https://trms.nbr.gov.bd/dashboard
+(function() {
+  const data = ${JSON.stringify(data, null, 2)};
+  console.log("Starting Auto-Fill for:", data.documentType);
+  
+  // Helper to find and fill inputs
+  const fill = (selector, value) => {
+    const el = document.querySelector(selector);
+    if (el) {
+      el.value = value;
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+      console.log("Filled " + selector + " with " + value);
+    }
+  };
+
+  // Example mappings (adjust based on actual NBR portal selectors)
+  if (data.totalAmount) fill('input[name="amount"]', data.totalAmount);
+  if (data.tin) fill('input[name="tin"]', data.tin);
+  if (data.date) fill('input[name="date"]', data.date);
+  if (data.vendorName) fill('input[name="vendor"]', data.vendorName);
+  
+  alert("Data from VATX.BD has been prepared for the NBR Portal!");
+})();
+    `.trim();
+  };
+
+  const activeFile = activeFileIndex !== null ? files[activeFileIndex] : null;
+
+  return (
+    <div className="space-y-8">
+      <SectionGuide 
+        title="স্মার্ট ওসিআর ও এনবিআর (NBR) অটোমেশন গাইড"
+        steps={[
+          "আপনার ডকুমেন্ট আপলোড করুন (Invoice, Mushak 6.3, Salary Certificate)।",
+          "এআই স্বয়ংক্রিয়ভাবে এনবিআর পোর্টালের জন্য প্রয়োজনীয় তথ্য সংগ্রহ করবে।",
+          "তথ্য যাচাই করে 'Generate NBR Script' বাটনে ক্লিক করুন।",
+          "এনবিআর পোর্টালে (trms.nbr.gov.bd) গিয়ে ব্রাউজার কনসোলে স্ক্রিপ্টটি পেস্ট করুন।"
+        ]}
+      />
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-1 space-y-6">
+          <div 
+            {...getRootProps()} 
+            className={cn(
+              "neo-card p-10 rounded-[3rem] border-2 border-dashed transition-all cursor-pointer flex flex-col items-center justify-center text-center gap-4",
+              isDragActive ? "border-brand-500 bg-brand-50/50" : "border-zinc-200 bg-white hover:border-brand-400 hover:bg-zinc-50"
+            )}
+          >
+            <input {...getInputProps()} />
+            <div className="w-16 h-16 rounded-2xl bg-brand-50 flex items-center justify-center text-brand-600 shadow-sm">
+              <Upload size={32} />
+            </div>
+            <div>
+              <p className="text-lg font-black font-display tracking-tight">Drop documents here</p>
+              <p className="text-xs text-zinc-500 mt-1 uppercase font-black tracking-widest">PDF, JPEG, PNG up to 10MB</p>
+            </div>
+          </div>
+
+          <div className="neo-card p-8 rounded-[3rem] bg-white shadow-xl shadow-zinc-200/50 border border-zinc-100">
+            <h4 className="text-sm font-black uppercase tracking-widest text-zinc-400 mb-6">Recent Uploads</h4>
+            <div className="space-y-3">
+              {files.map((f, i) => (
+                <div 
+                  key={i} 
+                  onClick={() => processOCR(i)}
+                  className={cn(
+                    "p-4 rounded-2xl border transition-all cursor-pointer flex items-center gap-3",
+                    activeFileIndex === i ? "border-brand-500 ring-2 ring-brand-500/10" : "border-zinc-100",
+                    f.status === 'done' ? "bg-emerald-50/50" : "bg-zinc-50 hover:bg-white hover:shadow-md"
+                  )}
+                >
+                  <div className={cn(
+                    "w-10 h-10 rounded-xl flex items-center justify-center shrink-0",
+                    f.status === 'done' ? "bg-emerald-500 text-white" : "bg-zinc-200 text-zinc-500"
+                  )}>
+                    {f.status === 'processing' ? <Loader2 size={20} className="animate-spin" /> : <File size={20} />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-black text-zinc-900 truncate">{f.file.name}</p>
+                    <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+                      {(f.file.size / 1024 / 1024).toFixed(2)} MB • {f.status}
+                    </p>
+                  </div>
+                  {f.status === 'done' && <CheckCircle2 size={16} className="text-emerald-600" />}
+                </div>
+              ))}
+              {files.length === 0 && (
+                <div className="py-10 text-center text-zinc-400 italic text-xs">No documents uploaded yet</div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="lg:col-span-2">
+          <div className="neo-card h-full min-h-[600px] rounded-[3rem] bg-white shadow-xl shadow-zinc-200/50 border border-zinc-100 overflow-hidden flex flex-col">
+            <div className="p-8 border-b border-zinc-100 flex items-center justify-between bg-zinc-50/50">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-brand-500 flex items-center justify-center text-white shadow-lg shadow-brand-500/20">
+                  <Bot size={20} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-black font-display tracking-tight">NBR Automation Assistant</h3>
+                  <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Structured Data & Filing Bridge</p>
+                </div>
+              </div>
+              {activeFile?.structuredData && (
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={() => {
+                      const script = generateNBRScript(activeFile.structuredData);
+                      navigator.clipboard.writeText(script);
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 bg-zinc-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-zinc-800 transition-all shadow-lg shadow-zinc-900/20"
+                  >
+                    <Copy size={14} /> Copy NBR Script
+                  </button>
+                </div>
+              )}
+            </div>
+            
+            <div className="flex-1 p-8 overflow-y-auto custom-scrollbar bg-zinc-50/20">
+              {activeFile?.status === 'processing' ? (
+                <div className="h-full flex flex-col items-center justify-center text-center gap-4">
+                  <div className="w-16 h-16 rounded-full border-4 border-brand-100 border-t-brand-500 animate-spin" />
+                  <p className="text-sm font-black text-zinc-400 uppercase tracking-widest">Analyzing for NBR Compliance...</p>
+                </div>
+              ) : activeFile?.structuredData ? (
+                <div className="space-y-8">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <DataPoint label="Document Type" value={activeFile.structuredData.documentType} icon={<FileText size={16} />} />
+                    <DataPoint label="Vendor Name" value={activeFile.structuredData.vendorName} icon={<Building2 size={16} />} />
+                    <DataPoint label="TIN Number" value={activeFile.structuredData.tin} icon={<Fingerprint size={16} />} />
+                    <DataPoint label="BIN Number" value={activeFile.structuredData.bin} icon={<ShieldCheck size={16} />} />
+                    <DataPoint label="Date" value={activeFile.structuredData.date} icon={<History size={16} />} />
+                    <DataPoint label="Total Amount" value={`৳${activeFile.structuredData.totalAmount?.toLocaleString()}`} icon={<Coins size={16} />} />
+                  </div>
+
+                  <div className="p-6 bg-brand-50 rounded-3xl border border-brand-100">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Zap size={16} className="text-brand-600" />
+                      <span className="text-[10px] font-black text-brand-600 uppercase tracking-widest">Automation Ready</span>
+                    </div>
+                    <p className="text-xs text-brand-900 leading-relaxed font-medium">
+                      This data has been formatted for the <strong>NBR Tax Return Management System</strong>. 
+                      You can use the script above to auto-fill the forms at <code>trms.nbr.gov.bd</code>.
+                    </p>
+                  </div>
+
+                  <div className="p-6 bg-white rounded-3xl border border-zinc-100 shadow-sm">
+                    <div className="flex items-center gap-2 mb-4">
+                      <MessageSquare size={16} className="text-zinc-400" />
+                      <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Raw AI Analysis</span>
+                    </div>
+                    <pre className="text-[10px] font-mono text-zinc-500 bg-zinc-50 p-4 rounded-xl overflow-x-auto">
+                      {JSON.stringify(activeFile.structuredData, null, 2)}
+                    </pre>
+                  </div>
+                </div>
+              ) : (
+                <div className="h-full flex flex-col items-center justify-center text-center gap-4 opacity-40">
+                  <div className="w-20 h-20 bg-zinc-100 rounded-[2rem] flex items-center justify-center text-zinc-300">
+                    <Sparkles size={40} />
+                  </div>
+                  <div>
+                    <p className="text-lg font-black font-display tracking-tight">Ready for Analysis</p>
+                    <p className="text-xs font-black text-zinc-400 uppercase tracking-widest mt-1">Select an upload to extract NBR filing data</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DataPoint({ label, value, icon }: { label: string, value?: string | number, icon: React.ReactNode }) {
+  return (
+    <div className="p-4 bg-white rounded-2xl border border-zinc-100 shadow-sm flex items-center gap-3">
+      <div className="w-8 h-8 rounded-lg bg-zinc-50 flex items-center justify-center text-zinc-400">
+        {icon}
+      </div>
+      <div>
+        <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">{label}</p>
+        <p className="text-sm font-black text-zinc-900">{value || 'Not Found'}</p>
+      </div>
+    </div>
+  );
+}
+
+function DeveloperPanel({ notices, setNotices }: { notices: TaxNotice[], setNotices: (n: TaxNotice[]) => void }) {
+  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    // In a real app, this would be a server-side check
+    if (password === 'vatx_admin_2026') {
+      setIsAuthorized(true);
+      setError('');
+    } else {
+      setError('Invalid developer credentials');
+    }
+  };
+
+  if (!isAuthorized) {
+    return (
+      <div className="h-[calc(100vh-200px)] flex items-center justify-center p-6">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="neo-card p-12 rounded-[3.5rem] bg-white shadow-2xl shadow-zinc-200/50 border border-zinc-100 max-w-md w-full text-center space-y-8"
+        >
+          <div className="w-20 h-20 bg-zinc-900 rounded-[2rem] flex items-center justify-center text-white mx-auto shadow-xl shadow-zinc-900/20">
+            <Lock size={32} />
+          </div>
+          <div>
+            <h3 className="text-2xl font-black font-display tracking-tight">Protected Access</h3>
+            <p className="text-xs text-zinc-400 uppercase font-black tracking-widest mt-2">Developer Panel requires authentication</p>
+          </div>
+          
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div className="relative">
+              <Fingerprint className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" size={20} />
+              <input 
+                type="password" 
+                placeholder="Enter Admin Key" 
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                className="w-full pl-12 pr-4 py-4 bg-zinc-50 border border-zinc-100 rounded-2xl text-sm focus:outline-none focus:ring-4 focus:ring-brand-500/5 focus:border-brand-500 transition-all"
+              />
+            </div>
+            {error && <p className="text-[10px] font-black text-red-500 uppercase tracking-widest">{error}</p>}
+            <button 
+              type="submit"
+              className="w-full bg-zinc-900 text-white p-5 rounded-2xl font-black hover:bg-zinc-800 transition-all shadow-xl shadow-zinc-900/20 active:scale-95 flex items-center justify-center gap-2"
+            >
+              Verify Identity <ArrowRight size={20} />
+            </button>
+          </form>
+        </motion.div>
+      </div>
+    );
+  }
+
+  const [newNotice, setNewNotice] = useState({ title: '', link: '', category: 'General' });
+
+  const addNotice = () => {
+    if (newNotice.title && newNotice.link) {
+      setNotices([{ ...newNotice, id: Date.now(), createdAt: new Date().toISOString() }, ...notices]);
+      setNewNotice({ title: '', link: '', category: 'General' });
+    }
+  };
+
+  const removeNotice = (id: number) => {
+    setNotices(notices.filter(n => n.id !== id));
+  };
+
+  return (
+    <div className="space-y-8">
+      <div className="neo-card p-10 rounded-[3rem] bg-white shadow-xl shadow-zinc-200/50">
+        <div className="flex items-center justify-between mb-10">
+          <h3 className="text-2xl font-black font-display tracking-tight flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center text-brand-600">
+              <Shield size={24} />
+            </div>
+            Developer Control Panel
+          </h3>
+          <div className="px-4 py-1.5 bg-zinc-900 text-white text-[10px] font-black uppercase tracking-widest rounded-full border border-zinc-100">Admin Only</div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+          <div className="space-y-6">
+            <h4 className="text-lg font-black font-display flex items-center gap-2">
+              <Bell size={20} className="text-brand-500" />
+              Manage Tax Notices
+            </h4>
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 gap-4">
+                <input 
+                  type="text" 
+                  placeholder="Notice Title" 
+                  value={newNotice.title}
+                  onChange={e => setNewNotice({ ...newNotice, title: e.target.value })}
+                  className="w-full p-4 bg-zinc-50 border border-zinc-100 rounded-2xl text-sm focus:outline-none focus:ring-4 focus:ring-brand-500/5 focus:border-brand-500 transition-all"
+                />
+                <input 
+                  type="text" 
+                  placeholder="Notice Link (URL)" 
+                  value={newNotice.link}
+                  onChange={e => setNewNotice({ ...newNotice, link: e.target.value })}
+                  className="w-full p-4 bg-zinc-50 border border-zinc-100 rounded-2xl text-sm focus:outline-none focus:ring-4 focus:ring-brand-500/5 focus:border-brand-500 transition-all"
+                />
+                <select 
+                  value={newNotice.category}
+                  onChange={e => setNewNotice({ ...newNotice, category: e.target.value })}
+                  className="w-full p-4 bg-zinc-50 border border-zinc-100 rounded-2xl text-sm focus:outline-none focus:ring-4 focus:ring-brand-500/5 focus:border-brand-500 transition-all"
+                >
+                  <option value="General">General</option>
+                  <option value="VAT">VAT</option>
+                  <option value="Income Tax">Income Tax</option>
+                  <option value="Customs">Customs</option>
+                </select>
+                <button 
+                  onClick={addNotice}
+                  className="w-full bg-brand-500 text-white p-4 rounded-2xl font-black hover:bg-brand-600 transition-all shadow-xl shadow-brand-500/20 active:scale-95 flex items-center justify-center gap-2"
+                >
+                  <Plus size={20} /> Add New Notice
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            <h4 className="text-lg font-black font-display flex items-center gap-2">
+              <History size={20} className="text-brand-500" />
+              Current Notices ({notices.length})
+            </h4>
+            <div className="max-h-[400px] overflow-y-auto space-y-3 pr-2 custom-scrollbar">
+              {notices.map(notice => (
+                <div key={notice.id} className="flex items-center justify-between p-5 bg-zinc-50 rounded-3xl border border-zinc-100 group hover:bg-white hover:shadow-xl hover:shadow-zinc-200/50 transition-all">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-black text-brand-600 uppercase tracking-widest mb-1">{notice.category}</span>
+                    <p className="font-black text-sm text-zinc-900 line-clamp-1">{notice.title}</p>
+                    <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mt-1">{new Date(notice.createdAt).toLocaleDateString()}</p>
+                  </div>
+                  <button 
+                    onClick={() => removeNotice(notice.id)} 
+                    className="text-red-500 hover:bg-red-50 p-3 rounded-2xl transition-all active:scale-90"
+                  >
+                    <Trash2 size={20} />
+                  </button>
+                </div>
+              ))}
+              {notices.length === 0 && (
+                <div className="p-10 text-center text-zinc-400 italic text-sm">No notices available</div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-12 pt-12 border-t border-zinc-100">
+          <h4 className="text-lg font-black font-display flex items-center gap-2 mb-8">
+            <Layout size={20} className="text-brand-500" />
+            Site Configuration
+          </h4>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="p-6 bg-zinc-50 rounded-[2rem] border border-zinc-100">
+              <p className="text-xs font-black text-zinc-400 uppercase tracking-widest mb-4">Site Maintenance</p>
+              <Toggle 
+                label="Maintenance Mode" 
+                checked={false} 
+                onChange={() => {}} 
+                description="Disable all user interactions"
+                compact
+              />
+            </div>
+            <div className="p-6 bg-zinc-50 rounded-[2rem] border border-zinc-100">
+              <p className="text-xs font-black text-zinc-400 uppercase tracking-widest mb-4">AI Features</p>
+              <Toggle 
+                label="Enable AI Advisor" 
+                checked={true} 
+                onChange={() => {}} 
+                description="Allow users to consult AI"
+                compact
+              />
+            </div>
+            <div className="p-6 bg-zinc-50 rounded-[2rem] border border-zinc-100">
+              <p className="text-xs font-black text-zinc-400 uppercase tracking-widest mb-4">Registration</p>
+              <Toggle 
+                label="New User Signups" 
+                checked={true} 
+                onChange={() => {}} 
+                description="Allow new users to join"
+                compact
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -583,136 +1292,311 @@ function Dashboard({ vatHistory, taxHistory }: { vatHistory: any[], taxHistory: 
   const totalVat = vatHistory.reduce((sum, r) => sum + r.vatAmount, 0);
   const totalTax = taxHistory.reduce((sum, r) => sum + r.totalTaxLiability, 0);
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0 }
+  };
+
   return (
-    <div className="space-y-10">
-      <SectionGuide 
-        title="ড্যাশবোর্ড ব্যবহার নির্দেশিকা"
-        steps={[
-          "আপনার ব্যবসার মোট ভ্যাট এবং ট্যাক্স পেমেন্টের সারাংশ এক নজরে দেখুন।",
-          "সাম্প্রতিক লেনদেন এবং ক্যালকুলেশন হিস্ট্রি চেক করুন।",
-          "আপনার সাবস্ক্রিপশন স্ট্যাটাস এবং প্রো ফিচারের অ্যাক্সেস নিশ্চিত করুন।",
-          "চার্ট এবং গ্রাফের মাধ্যমে আপনার ট্যাক্স কমপ্লায়েন্সের ট্রেন্ড বিশ্লেষণ করুন।"
-        ]}
-      />
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <motion.div 
+      variants={containerVariants}
+      initial="hidden"
+      animate="show"
+      className="space-y-8 md:space-y-12"
+    >
+      {/* Welcome Section */}
+      <motion.section 
+        variants={itemVariants}
+        className="relative overflow-hidden rounded-[3rem] bg-zinc-900 p-8 md:p-12 text-white shadow-2xl shadow-zinc-900/20"
+      >
+        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
+          <div className="space-y-6 text-center md:text-left">
+            <motion.div 
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2 }}
+              className="inline-flex items-center gap-2 px-4 py-1.5 bg-brand-500/20 text-brand-400 rounded-full text-[10px] font-black uppercase tracking-widest border border-brand-500/20"
+            >
+              <ShieldCheck size={12} /> Verified Compliance
+            </motion.div>
+            <h2 className="text-4xl md:text-6xl font-black font-display tracking-tight leading-[0.9]">
+              Welcome back, <br />
+              <span className="text-brand-400">Taxpayer</span>
+            </h2>
+            <p className="text-zinc-400 text-sm md:text-lg max-w-md leading-relaxed font-medium">
+              Your compliance score is <span className="text-white font-black">98%</span>. You have <span className="text-white font-black underline decoration-brand-500 underline-offset-4">3 pending notices</span> to review.
+            </p>
+            <div className="flex flex-wrap justify-center md:justify-start gap-4 pt-4">
+              <button 
+                onClick={() => window.dispatchEvent(new CustomEvent('changeTab', { detail: 'vat' }))} 
+                className="px-8 py-4 bg-brand-500 hover:bg-brand-600 text-white rounded-2xl font-black text-sm transition-all shadow-xl shadow-brand-500/30 active:scale-95"
+              >
+                New VAT Entry
+              </button>
+              <button 
+                onClick={() => window.dispatchEvent(new CustomEvent('changeTab', { detail: 'notices' }))} 
+                className="px-8 py-4 bg-white/10 hover:bg-white/20 text-white rounded-2xl font-black text-sm transition-all backdrop-blur-md border border-white/10 active:scale-95"
+              >
+                View Notices
+              </button>
+            </div>
+          </div>
+          <div className="hidden lg:block relative">
+            <motion.div 
+              animate={{ 
+                scale: [1, 1.1, 1],
+                opacity: [0.2, 0.4, 0.2]
+              }}
+              transition={{ 
+                duration: 4,
+                repeat: Infinity,
+                ease: "easeInOut"
+              }}
+              className="w-80 h-80 bg-brand-500/20 rounded-full blur-3xl absolute inset-0" 
+            />
+            <motion.div 
+              animate={{ 
+                y: [0, -20, 0],
+                rotate: [12, 15, 12]
+              }}
+              transition={{ 
+                duration: 6,
+                repeat: Infinity,
+                ease: "easeInOut"
+              }}
+              className="relative w-56 h-56 bg-gradient-to-tr from-brand-500 to-emerald-400 rounded-[3.5rem] flex items-center justify-center shadow-2xl shadow-brand-500/40"
+            >
+              <ShieldCheck size={100} className="text-white -rotate-12 drop-shadow-2xl" />
+            </motion.div>
+          </div>
+        </div>
+        <div className="absolute top-0 right-0 w-96 h-96 bg-brand-500/10 rounded-full -mr-48 -mt-48 blur-3xl" />
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-brand-500/5 rounded-full -ml-32 -mb-32 blur-3xl" />
+      </motion.section>
+
+      <motion.div variants={containerVariants} className="grid grid-cols-1 md:grid-cols-3 gap-8">
         <StatCard 
-          icon={<Receipt size={22} />} 
-          label="Total VAT Liability" 
+          icon={<Receipt size={28} />} 
+          label="VAT Liability" 
           value={`৳${totalVat.toLocaleString()}`} 
           trend="+12.5%" 
           color="bg-brand-500" 
+          description="Total calculated VAT for current period"
+          delay={0.1}
         />
         <StatCard 
-          icon={<Calculator size={22} />} 
-          label="Total Income Tax" 
+          icon={<Calculator size={28} />} 
+          label="Income Tax" 
           value={`৳${totalTax.toLocaleString()}`} 
           trend="+5.2%" 
           color="bg-zinc-900" 
+          description="Estimated income tax for FY 2024-25"
+          delay={0.2}
         />
         <StatCard 
-          icon={<TrendingUp size={22} />} 
-          label="Compliance Score" 
+          icon={<TrendingUp size={28} />} 
+          label="Compliance" 
           value="98%" 
           trend="Perfect" 
-          color="bg-brand-400" 
+          color="bg-emerald-600" 
+          description="Your overall tax compliance health score"
+          delay={0.3}
         />
-      </div>
+      </motion.div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="neo-card p-8 rounded-[2.5rem]">
-          <h3 className="text-xl font-bold font-display mb-8 flex items-center gap-2">
-            <BarChart3 size={20} className="text-brand-500" />
-            Liability Distribution
-          </h3>
-          <div className="h-[300px]">
+        <motion.div variants={itemVariants} className="neo-card p-10 rounded-[3rem] bg-white shadow-xl shadow-zinc-200/50">
+          <div className="flex items-center justify-between mb-10">
+            <h3 className="text-2xl font-black font-display tracking-tight flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center text-brand-600">
+                <BarChart3 size={24} />
+              </div>
+              Liability Distribution
+            </h3>
+            <div className="px-4 py-1.5 bg-zinc-50 text-zinc-500 text-[10px] font-black uppercase tracking-widest rounded-full border border-zinc-100">Real-time</div>
+          </div>
+          <div className="h-[350px]">
             <ResponsiveContainer width="100%" height="100%">
               <RePieChart>
                 <Pie
                   data={[
-                    { name: 'VAT', value: totalVat },
-                    { name: 'Income Tax', value: totalTax },
+                    { name: 'VAT', value: totalVat || 1 },
+                    { name: 'Income Tax', value: totalTax || 1 },
                   ]}
                   cx="50%"
                   cy="50%"
-                  innerRadius={60}
-                  outerRadius={80}
-                  paddingAngle={8}
+                  innerRadius={100}
+                  outerRadius={130}
+                  paddingAngle={12}
                   dataKey="value"
+                  stroke="none"
                 >
                   <Cell fill="#10b981" />
                   <Cell fill="#18181b" />
                 </Pie>
                 <Tooltip 
-                  contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
+                  contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.15)', padding: '20px' }}
                 />
               </RePieChart>
             </ResponsiveContainer>
           </div>
-          <div className="flex justify-center gap-8 mt-4">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-brand-500" />
-              <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">VAT</span>
+          <div className="flex justify-center gap-12 mt-8">
+            <div className="flex items-center gap-4">
+              <div className="w-5 h-5 rounded-full bg-brand-500 shadow-lg shadow-brand-500/30" />
+              <div className="flex flex-col">
+                <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">VAT</span>
+                <span className="text-lg font-black">৳{totalVat.toLocaleString()}</span>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-zinc-900" />
-              <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Income Tax</span>
+            <div className="flex items-center gap-4">
+              <div className="w-5 h-5 rounded-full bg-zinc-900 shadow-lg shadow-zinc-900/30" />
+              <div className="flex flex-col">
+                <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Income Tax</span>
+                <span className="text-lg font-black">৳{totalTax.toLocaleString()}</span>
+              </div>
             </div>
           </div>
-        </div>
+        </motion.div>
 
-        <div className="neo-card p-8 rounded-[2.5rem]">
-          <h3 className="text-xl font-bold font-display mb-8 flex items-center gap-2">
-            <History size={20} className="text-brand-500" />
-            Recent Activity
-          </h3>
+        <motion.div variants={itemVariants} className="neo-card p-10 rounded-[3rem] bg-white shadow-xl shadow-zinc-200/50">
+          <div className="flex items-center justify-between mb-10">
+            <h3 className="text-2xl font-black font-display tracking-tight flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center text-brand-600">
+                <History size={24} />
+              </div>
+              Recent Activity
+            </h3>
+            <button 
+              onClick={() => window.dispatchEvent(new CustomEvent('changeTab', { detail: 'history' }))} 
+              className="text-xs text-brand-600 font-black hover:underline px-4 py-2 bg-brand-50 rounded-full transition-all active:scale-95"
+            >
+              View History
+            </button>
+          </div>
           <div className="space-y-4">
             {[...vatHistory, ...taxHistory]
               .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
               .slice(0, 5)
               .map((item, i) => (
-                <div key={i} className="flex items-center justify-between p-4 bg-zinc-50/50 border border-zinc-100 rounded-2xl group hover:bg-white hover:shadow-sm transition-all duration-200">
-                  <div className="flex items-center gap-4">
+                <motion.div 
+                  key={i} 
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                  className="flex items-center justify-between p-5 bg-zinc-50/50 border border-zinc-100 rounded-3xl group hover:bg-white hover:shadow-xl hover:shadow-zinc-200/50 hover:-translate-y-1 transition-all duration-300 cursor-pointer"
+                >
+                  <div className="flex items-center gap-5">
                     <div className={cn(
-                      "w-11 h-11 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110",
+                      "w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 group-hover:rotate-6 shadow-sm",
                       item.vatAmount !== undefined ? "bg-brand-50 text-brand-600" : "bg-zinc-100 text-zinc-900"
                     )}>
-                      {item.vatAmount !== undefined ? <Receipt size={18} /> : <Calculator size={18} />}
+                      {item.vatAmount !== undefined ? <Receipt size={24} /> : <Calculator size={24} />}
                     </div>
                     <div>
-                      <p className="font-bold text-sm text-zinc-900">{item.vatAmount !== undefined ? 'VAT Calculation' : 'Tax Calculation'}</p>
-                      <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">{new Date(item.createdAt).toLocaleDateString()}</p>
+                      <p className="font-black text-sm text-zinc-900">{item.vatAmount !== undefined ? 'VAT Calculation' : 'Tax Calculation'}</p>
+                      <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">{new Date(item.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</p>
                     </div>
                   </div>
-                  <p className="font-bold text-zinc-900">৳{(item.vatAmount || item.totalTaxLiability).toLocaleString()}</p>
-                </div>
+                  <div className="text-right">
+                    <p className="font-black text-lg text-zinc-900">৳{(item.vatAmount || item.totalTaxLiability).toLocaleString()}</p>
+                    <div className="flex items-center justify-end gap-1.5">
+                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      <p className="text-[8px] font-black text-emerald-500 uppercase tracking-widest">Verified</p>
+                    </div>
+                  </div>
+                </motion.div>
               ))}
           </div>
-        </div>
+        </motion.div>
       </div>
-    </div>
+
+      <motion.div 
+        variants={itemVariants}
+        className="neo-card p-10 rounded-[3rem] bg-gradient-to-br from-zinc-900 via-zinc-900 to-zinc-800 text-white relative overflow-hidden group shadow-2xl shadow-zinc-900/20"
+      >
+        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-12">
+          <div className="space-y-6 max-w-xl text-center md:text-left">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-brand-500/20 text-brand-400 rounded-full text-[10px] font-black uppercase tracking-widest">
+              <Sparkles size={12} className="animate-pulse" /> AI Powered Assistant
+            </div>
+            <h3 className="text-3xl md:text-4xl font-black font-display leading-tight tracking-tight">
+              Stuck with complex <span className="text-brand-400 underline decoration-brand-400/30 underline-offset-8">Tax Laws?</span>
+            </h3>
+            <p className="text-zinc-400 text-sm md:text-base leading-relaxed">
+              Our AI advisor is trained on the latest Bangladesh Tax Act 2023. Get instant, accurate answers to your VAT and Customs queries.
+            </p>
+            <button 
+              onClick={() => window.dispatchEvent(new CustomEvent('changeTab', { detail: 'ai' }))}
+              className="w-full md:w-auto px-10 py-5 bg-brand-500 text-white rounded-2xl font-black hover:bg-brand-600 transition-all flex items-center justify-center gap-3 group/btn shadow-xl shadow-brand-500/20 active:scale-95"
+            >
+              Consult AI Advisor <ArrowRight size={20} className="transition-transform group-hover/btn:translate-x-2" />
+            </button>
+          </div>
+          <div className="relative">
+            <div className="absolute inset-0 bg-brand-500/20 rounded-full blur-3xl animate-pulse" />
+            <div className="relative w-56 h-56 bg-white/5 backdrop-blur-xl rounded-[3rem] border border-white/10 flex items-center justify-center shadow-2xl animate-float">
+              <Bot size={100} className="text-brand-400" />
+            </div>
+          </div>
+        </div>
+        <div className="absolute top-0 right-0 w-80 h-80 bg-brand-500/10 rounded-full -mr-40 -mt-40 blur-3xl" />
+      </motion.div>
+    </motion.div>
   );
 }
 
-function StatCard({ icon, label, value, trend, color }: { icon: React.ReactNode, label: string, value: string, trend: string, color: string }) {
+function StatCard({ icon, label, value, trend, color, description, delay = 0 }: { icon: React.ReactNode, label: string, value: string, trend: string, color: string, description?: string, delay?: number }) {
   return (
-    <div className="neo-card p-8 rounded-[2.5rem] relative overflow-hidden group hover:scale-[1.02] transition-all duration-300">
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay }}
+      whileHover={{ y: -8, scale: 1.02 }}
+      className="neo-card p-10 rounded-[3rem] relative overflow-hidden group transition-all duration-500 bg-white shadow-xl shadow-zinc-200/50 cursor-pointer"
+    >
       <div className="flex justify-between items-start relative z-10">
-        <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-lg transition-transform duration-500 group-hover:rotate-12", color)}>
+        <motion.div 
+          whileHover={{ rotate: 12, scale: 1.1 }}
+          className={cn("w-20 h-20 rounded-[1.5rem] flex items-center justify-center text-white shadow-2xl transition-all duration-500", color)}
+        >
           {icon}
+        </motion.div>
+        <div className="flex flex-col items-end gap-2">
+          <motion.span 
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: delay + 0.2 }}
+            className={cn(
+              "text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-widest shadow-sm border",
+              trend.startsWith('+') 
+                ? "bg-red-50 text-red-600 border-red-100" 
+                : trend === 'Perfect' 
+                  ? "bg-emerald-50 text-emerald-600 border-emerald-100"
+                  : "bg-emerald-50 text-emerald-600 border-emerald-100"
+            )}
+          >
+            {trend}
+          </motion.span>
+          <span className="text-[8px] font-black text-zinc-400 uppercase tracking-tighter">vs last month</span>
         </div>
-        <span className={cn(
-          "text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider",
-          trend.startsWith('+') ? "bg-brand-50 text-brand-600" : "bg-zinc-100 text-zinc-600"
-        )}>
-          {trend}
-        </span>
       </div>
-      <div className="mt-6 relative z-10">
-        <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-1">{label}</p>
-        <h4 className="text-3xl font-bold font-display tracking-tight text-zinc-900">{value}</h4>
+      <div className="mt-10 relative z-10">
+        <p className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] mb-2">{label}</p>
+        <h4 className="text-4xl md:text-5xl font-black font-display tracking-tighter text-zinc-900 mb-3">{value}</h4>
+        {description && <p className="text-xs text-zinc-400 font-medium leading-relaxed line-clamp-2">{description}</p>}
       </div>
-      <div className="absolute -bottom-6 -right-6 w-24 h-24 bg-zinc-50 rounded-full opacity-50 group-hover:scale-150 transition-transform duration-700" />
-    </div>
+      <div className="absolute -bottom-12 -right-12 w-40 h-40 bg-zinc-50 rounded-full opacity-50 group-hover:scale-150 transition-transform duration-1000 -z-0" />
+    </motion.div>
   );
 }
 
@@ -786,91 +1670,81 @@ function VATCalculator({ onComplete }: { onComplete: () => void }) {
         ]}
       />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="neo-card p-10 rounded-[2.5rem] space-y-8">
-        <div>
-          <h3 className="text-2xl font-bold font-display mb-2">Input Details</h3>
-          <p className="text-sm text-zinc-500">Enter your transaction values below</p>
-        </div>
-
-        <div className="space-y-6">
+        <div className="neo-card p-10 rounded-[3rem] space-y-10">
           <div>
-            <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] mb-3">Base Amount (৳)</label>
-            <input 
-              type="number"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder="0.00"
-              className="w-full px-6 py-4 bg-zinc-50 border border-zinc-100 rounded-2xl focus:ring-4 focus:ring-brand-500/5 focus:border-brand-500 outline-none font-medium transition-all"
-            />
+            <h3 className="text-2xl font-black font-display tracking-tight mb-2">Input Details</h3>
+            <p className="text-sm text-zinc-500 font-medium">Enter your transaction values below</p>
           </div>
 
-          <div>
-            <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] mb-3">VAT Rate (%)</label>
-            <div className="grid grid-cols-4 gap-3">
-              {['5', '7.5', '15', '20'].map((r) => (
-                <button
-                  key={r}
-                  onClick={() => setRate(r)}
-                  className={cn(
-                    "py-3 rounded-xl font-bold transition-all border text-xs",
-                    rate === r 
-                      ? "bg-zinc-900 text-white border-zinc-900 shadow-lg shadow-zinc-200" 
-                      : "bg-white text-zinc-500 border-zinc-100 hover:border-brand-500 hover:text-brand-600"
-                  )}
-                >
-                  {r}%
-                </button>
-              ))}
+          <div className="space-y-8">
+            <div>
+              <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] mb-4">Base Amount (৳)</label>
+              <div className="relative group">
+                <div className="absolute left-6 top-1/2 -translate-y-1/2 text-zinc-400 font-bold transition-colors group-focus-within:text-brand-600">৳</div>
+                <input 
+                  type="number"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  placeholder="0.00"
+                  className="w-full pl-12 pr-6 py-5 bg-zinc-50 border border-zinc-100 rounded-[2rem] focus:ring-4 focus:ring-brand-500/5 focus:border-brand-500 outline-none font-black text-xl transition-all placeholder:text-zinc-300"
+                />
+              </div>
             </div>
-          </div>
 
-          <div className="space-y-4 pt-4">
-            <Toggle 
-              label="Amount includes VAT" 
-              checked={includeVAT} 
-              onChange={setIncludeVAT} 
-              description="Calculate VAT from total price"
-            />
-            <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] mb-4">VAT Rate (%)</label>
+              <div className="grid grid-cols-4 gap-4">
+                {['5', '7.5', '15', '20'].map((r) => (
+                  <button
+                    key={r}
+                    onClick={() => setRate(r)}
+                    className={cn(
+                      "py-4 rounded-2xl font-black transition-all border text-sm",
+                      rate === r 
+                        ? "bg-zinc-900 text-white border-zinc-900 shadow-xl shadow-zinc-200 scale-[1.02]" 
+                        : "bg-white text-zinc-500 border-zinc-100 hover:border-brand-500 hover:text-brand-600 hover:bg-brand-50/30"
+                    )}
+                  >
+                    {r}%
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-5 p-6 bg-zinc-50/50 rounded-[2rem] border border-zinc-100">
               <Toggle 
-                label="Export" 
-                checked={isExport} 
-                onChange={setIsExport} 
-                compact
+                label="Amount includes VAT" 
+                checked={includeVAT} 
+                onChange={setIncludeVAT} 
+                description="Calculate VAT from total price"
               />
-              <Toggle 
-                label="Reverse" 
-                checked={isReverseCharge} 
-                onChange={setIsReverseCharge} 
-                compact
-              />
+              <div className="h-px bg-zinc-100 w-full" />
+              <div className="grid grid-cols-2 gap-6">
+                <Toggle 
+                  label="Export" 
+                  checked={isExport} 
+                  onChange={setIsExport} 
+                  compact
+                />
+                <Toggle 
+                  label="Reverse" 
+                  checked={isReverseCharge} 
+                  onChange={setIsReverseCharge} 
+                  compact
+                />
+              </div>
             </div>
-          </div>
 
-          <div>
-            <label className="block text-sm font-bold text-[#374151] mb-2">Other Charges (Shipping, Service, etc.)</label>
-            <div className="relative">
-              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[#9CA3AF]">৳</div>
-              <input 
-                type="number" 
-                value={otherCharges}
-                onChange={(e) => setOtherCharges(e.target.value)}
-                className="w-full pl-10 pr-4 py-4 bg-[#F9FAFB] border border-[#E5E7EB] rounded-2xl focus:ring-2 focus:ring-[#10B981] focus:border-transparent outline-none transition-all font-medium"
-                placeholder="0.00"
-              />
-            </div>
+            <button 
+              onClick={calculate}
+              disabled={!amount || loading}
+              className="w-full py-6 bg-brand-600 text-white rounded-[2rem] font-black text-lg shadow-xl shadow-brand-600/20 hover:bg-brand-700 transition-all disabled:opacity-50 disabled:scale-100 active:scale-95 flex items-center justify-center gap-3"
+            >
+              {loading ? <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin" /> : <Calculator size={24} />}
+              Calculate VAT
+            </button>
           </div>
-
-          <button 
-            onClick={calculate}
-            disabled={!amount || loading}
-            className="w-full btn-primary flex items-center justify-center gap-3 disabled:opacity-50 disabled:scale-100"
-          >
-            {loading ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Calculator size={20} />}
-            Calculate VAT
-          </button>
         </div>
-      </div>
 
       <div className="space-y-8">
         <AnimatePresence mode="wait">
@@ -880,48 +1754,51 @@ function VATCalculator({ onComplete }: { onComplete: () => void }) {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="neo-card p-10 rounded-[2.5rem] bg-zinc-900 text-white relative overflow-hidden"
+              className="neo-card p-10 rounded-[3rem] bg-zinc-900 text-white relative overflow-hidden"
             >
               <div className="absolute top-0 right-0 w-64 h-64 bg-brand-500/10 rounded-full -mr-32 -mt-32 blur-3xl" />
               
               <div className="relative z-10">
                 <div className="flex justify-between items-center mb-10">
-                  <h3 className="text-xl font-bold font-display">Calculation Result</h3>
-                  <div className="px-3 py-1 bg-brand-500 text-white text-[10px] font-black uppercase tracking-widest rounded-full">Verified</div>
+                  <h3 className="text-xl font-black font-display tracking-tight">Calculation Result</h3>
+                  <div className="px-4 py-1.5 bg-brand-500 text-white text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg shadow-brand-500/20">Verified</div>
                 </div>
 
-                <div className="space-y-6">
+                <div className="space-y-8">
                   <div className="flex justify-between items-center pb-6 border-b border-zinc-800">
-                    <span className="text-zinc-400 text-sm">Net Amount</span>
-                    <span className="text-xl font-bold">৳{result.netAmount.toLocaleString()}</span>
+                    <span className="text-zinc-400 text-sm font-bold uppercase tracking-widest">Net Amount</span>
+                    <span className="text-2xl font-black">৳{result.netAmount.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between items-center pb-6 border-b border-zinc-800">
-                    <span className="text-zinc-400 text-sm">VAT Amount ({result.rate}%)</span>
-                    <span className="text-xl font-bold text-brand-400">৳{result.vatAmount.toLocaleString()}</span>
+                    <span className="text-zinc-400 text-sm font-bold uppercase tracking-widest">VAT ({result.rate}%)</span>
+                    <span className="text-2xl font-black text-brand-400">৳{result.vatAmount.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between items-center pt-4">
-                    <span className="text-zinc-400 text-sm font-bold uppercase tracking-widest">Total Amount</span>
-                    <span className="text-4xl font-bold font-display">৳{result.totalAmount.toLocaleString()}</span>
+                    <span className="text-zinc-400 text-sm font-black uppercase tracking-[0.2em]">Total Amount</span>
+                    <div className="text-right">
+                      <span className="text-5xl font-black font-display text-white block">৳{result.totalAmount.toLocaleString()}</span>
+                      <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mt-1">Inclusive of all taxes</span>
+                    </div>
                   </div>
                 </div>
 
-                <div className="mt-12 pt-10 border-t border-zinc-800 space-y-6">
+                <div className="mt-12 pt-10 border-t border-zinc-800 space-y-8">
                   <div>
-                    <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] mb-3">Save as Reference</label>
+                    <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] mb-4">Save as Reference</label>
                     <div className="flex gap-3">
                       <input 
                         type="text"
                         value={label}
                         onChange={(e) => setLabel(e.target.value)}
                         placeholder="e.g. Office Supplies"
-                        className="flex-1 px-6 py-4 bg-zinc-800 border border-zinc-700 rounded-2xl focus:ring-2 focus:ring-brand-500 outline-none font-medium transition-all text-sm"
+                        className="flex-1 px-6 py-5 bg-zinc-800 border border-zinc-700 rounded-2xl focus:ring-2 focus:ring-brand-500 outline-none font-bold transition-all text-sm text-white placeholder:text-zinc-600"
                       />
                       <button 
                         onClick={saveCalculation}
                         disabled={saving || !label.trim()}
-                        className="btn-primary bg-brand-500 hover:bg-brand-600 px-8"
+                        className="w-16 h-16 bg-brand-500 hover:bg-brand-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-brand-500/20 transition-all active:scale-95 disabled:opacity-50"
                       >
-                        {saving ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Save size={20} />}
+                        {saving ? <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin" /> : <Save size={24} />}
                       </button>
                     </div>
                   </div>
@@ -1015,65 +1892,68 @@ function TaxCalculator({ onComplete }: { onComplete: () => void }) {
         ]}
       />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-        <div className="neo-card p-10 rounded-[2.5rem] space-y-8">
-        <div>
-          <h3 className="text-2xl font-bold font-display mb-2">Tax Parameters</h3>
-          <p className="text-sm text-zinc-500">Configure your income profile</p>
-        </div>
-
-        <div className="space-y-6">
-          <div className="flex p-1.5 bg-zinc-100 rounded-2xl">
-            <button 
-              onClick={() => setEntityType('individual')}
-              className={cn(
-                "flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all text-sm",
-                entityType === 'individual' ? "bg-white shadow-sm text-brand-600" : "text-zinc-500 hover:text-zinc-900"
-              )}
-            >
-              <User size={18} /> Individual
-            </button>
-            <button 
-              onClick={() => setEntityType('corporate')}
-              className={cn(
-                "flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all text-sm",
-                entityType === 'corporate' ? "bg-white shadow-sm text-blue-600" : "text-zinc-500 hover:text-zinc-900"
-              )}
-            >
-              <Building2 size={18} /> Corporate
-            </button>
-          </div>
-
+        <div className="neo-card p-10 rounded-[3rem] space-y-10">
           <div>
-            <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] mb-3">Annual Gross Income (৳)</label>
-            <input 
-              type="number"
-              value={income}
-              onChange={(e) => setIncome(e.target.value)}
-              placeholder="0.00"
-              className="w-full px-6 py-4 bg-zinc-50 border border-zinc-100 rounded-2xl focus:ring-4 focus:ring-brand-500/5 focus:border-brand-500 outline-none font-medium transition-all"
-            />
+            <h3 className="text-2xl font-black font-display tracking-tight mb-2">Tax Parameters</h3>
+            <p className="text-sm text-zinc-500 font-medium">Configure your income profile</p>
           </div>
 
-          <div className="p-6 bg-brand-50/50 rounded-2xl border border-brand-100 flex gap-4">
-            <div className="w-10 h-10 bg-brand-100 rounded-xl flex items-center justify-center text-brand-600 shrink-0">
-              <FileText size={20} />
+          <div className="space-y-8">
+            <div className="flex p-2 bg-zinc-100 rounded-[2rem]">
+              <button 
+                onClick={() => setEntityType('individual')}
+                className={cn(
+                  "flex-1 flex items-center justify-center gap-3 py-4 rounded-[1.5rem] font-black transition-all text-sm",
+                  entityType === 'individual' ? "bg-white shadow-xl text-brand-600 scale-[1.02]" : "text-zinc-500 hover:text-zinc-900"
+                )}
+              >
+                <User size={20} /> Individual
+              </button>
+              <button 
+                onClick={() => setEntityType('corporate')}
+                className={cn(
+                  "flex-1 flex items-center justify-center gap-3 py-4 rounded-[1.5rem] font-black transition-all text-sm",
+                  entityType === 'corporate' ? "bg-white shadow-xl text-blue-600 scale-[1.02]" : "text-zinc-500 hover:text-zinc-900"
+                )}
+              >
+                <Building2 size={20} /> Corporate
+              </button>
             </div>
+
             <div>
-              <p className="text-sm font-bold text-brand-900">Tax Year 2024-25</p>
-              <p className="text-xs text-brand-700/70 mt-1 leading-relaxed">Calculations follow the latest NBR directives for the current financial year.</p>
+              <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] mb-4">Annual Gross Income (৳)</label>
+              <div className="relative group">
+                <div className="absolute left-6 top-1/2 -translate-y-1/2 text-zinc-400 font-bold transition-colors group-focus-within:text-brand-600">৳</div>
+                <input 
+                  type="number"
+                  value={income}
+                  onChange={(e) => setIncome(e.target.value)}
+                  placeholder="0.00"
+                  className="w-full pl-12 pr-6 py-5 bg-zinc-50 border border-zinc-100 rounded-[2rem] focus:ring-4 focus:ring-brand-500/5 focus:border-brand-500 outline-none font-black text-xl transition-all placeholder:text-zinc-300"
+                />
+              </div>
             </div>
-          </div>
 
-          <button 
-            onClick={calculate}
-            disabled={!income || loading}
-            className="w-full btn-primary flex items-center justify-center gap-3 disabled:opacity-50 disabled:scale-100"
-          >
-            {loading ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Calculator size={20} />}
-            Calculate Tax
-          </button>
+            <div className="p-8 bg-brand-50/30 rounded-[2.5rem] border border-brand-100 flex gap-5">
+              <div className="w-14 h-14 bg-brand-100 rounded-2xl flex items-center justify-center text-brand-600 shadow-lg shadow-brand-600/10 shrink-0">
+                <FileText size={28} />
+              </div>
+              <div>
+                <p className="text-base font-black text-brand-900">Tax Year 2024-25</p>
+                <p className="text-xs text-brand-700/70 mt-1.5 leading-relaxed font-medium">Calculations follow the latest NBR directives for the current financial year.</p>
+              </div>
+            </div>
+
+            <button 
+              onClick={calculate}
+              disabled={!income || loading}
+              className="w-full py-6 bg-brand-600 text-white rounded-[2rem] font-black text-lg shadow-xl shadow-brand-600/20 hover:bg-brand-700 transition-all disabled:opacity-50 disabled:scale-100 active:scale-95 flex items-center justify-center gap-3"
+            >
+              {loading ? <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin" /> : <Calculator size={24} />}
+              Calculate Tax
+            </button>
+          </div>
         </div>
-      </div>
 
       <div className="space-y-8">
         <AnimatePresence mode="wait">
@@ -1083,48 +1963,51 @@ function TaxCalculator({ onComplete }: { onComplete: () => void }) {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="neo-card p-10 rounded-[2.5rem] bg-zinc-900 text-white relative overflow-hidden"
+              className="neo-card p-10 rounded-[3rem] bg-zinc-900 text-white relative overflow-hidden"
             >
               <div className="absolute top-0 right-0 w-64 h-64 bg-brand-500/10 rounded-full -mr-32 -mt-32 blur-3xl" />
               
               <div className="relative z-10">
                 <div className="flex justify-between items-center mb-10">
-                  <h3 className="text-xl font-bold font-display">Tax Liability</h3>
-                  <div className="px-3 py-1 bg-brand-500 text-white text-[10px] font-black uppercase tracking-widest rounded-full">FY 2024-25</div>
+                  <h3 className="text-xl font-black font-display tracking-tight">Tax Liability</h3>
+                  <div className="px-4 py-1.5 bg-brand-500 text-white text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg shadow-brand-500/20">FY 2024-25</div>
                 </div>
 
-                <div className="space-y-6">
+                <div className="space-y-8">
                   <div className="flex justify-between items-center pb-6 border-b border-zinc-800">
-                    <span className="text-zinc-400 text-sm">Taxable Income</span>
-                    <span className="text-xl font-bold">৳{result.taxableIncome.toLocaleString()}</span>
+                    <span className="text-zinc-400 text-sm font-bold uppercase tracking-widest">Taxable Income</span>
+                    <span className="text-2xl font-black">৳{result.taxableIncome.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between items-center pb-6 border-b border-zinc-800">
-                    <span className="text-zinc-400 text-sm">Effective Rate</span>
-                    <span className="text-xl font-bold text-brand-400">{result.effectiveRate}%</span>
+                    <span className="text-zinc-400 text-sm font-bold uppercase tracking-widest">Effective Rate</span>
+                    <span className="text-2xl font-black text-brand-400">{result.effectiveRate}%</span>
                   </div>
                   <div className="flex justify-between items-center pt-4">
-                    <span className="text-zinc-400 text-sm font-bold uppercase tracking-widest">Total Payable</span>
-                    <span className="text-4xl font-bold font-display">৳{result.totalTaxLiability.toLocaleString()}</span>
+                    <span className="text-zinc-400 text-sm font-black uppercase tracking-[0.2em]">Total Payable</span>
+                    <div className="text-right">
+                      <span className="text-5xl font-black font-display text-white block">৳{result.totalTaxLiability.toLocaleString()}</span>
+                      <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mt-1">NBR Compliant Calculation</span>
+                    </div>
                   </div>
                 </div>
 
-                <div className="mt-12 pt-10 border-t border-zinc-800 space-y-6">
+                <div className="mt-12 pt-10 border-t border-zinc-800 space-y-8">
                   <div>
-                    <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] mb-3">Save as Reference</label>
+                    <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] mb-4">Save as Reference</label>
                     <div className="flex gap-3">
                       <input 
                         type="text"
                         value={label}
                         onChange={(e) => setLabel(e.target.value)}
                         placeholder="e.g. FY 2024 Final"
-                        className="flex-1 px-6 py-4 bg-zinc-800 border border-zinc-700 rounded-2xl focus:ring-2 focus:ring-brand-500 outline-none font-medium transition-all text-sm"
+                        className="flex-1 px-6 py-5 bg-zinc-800 border border-zinc-700 rounded-2xl focus:ring-2 focus:ring-brand-500 outline-none font-bold transition-all text-sm text-white placeholder:text-zinc-600"
                       />
                       <button 
                         onClick={saveCalculation}
                         disabled={saving || !label.trim()}
-                        className="btn-primary bg-brand-500 hover:bg-brand-600 px-8"
+                        className="w-16 h-16 bg-brand-500 hover:bg-brand-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-brand-500/20 transition-all active:scale-95 disabled:opacity-50"
                       >
-                        {saving ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Save size={20} />}
+                        {saving ? <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin" /> : <Save size={24} />}
                       </button>
                     </div>
                   </div>
@@ -1226,20 +2109,48 @@ function HistoryView({ vatHistory, taxHistory }: { vatHistory: any[], taxHistory
 }
 
 function TariffCalculator() {
-  const [csvUrl, setCsvUrl] = useState('https://docs.google.com/spreadsheets/d/e/2PACX-1vTrBZSeQ-YGYBGz66IrcqooOmJ9ErQdDRj3iYqbgRw4hNRvjurOctn7lC83w4LCRtKQdhxsoXhYSEWf/pub?gid=2081232822&single=true&output=csv');
+  const [selectedYear, setSelectedYear] = useState('2025-26');
+  const tariffUrls: Record<string, string> = {
+    '2025-26': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTrBZSeQ-YGYBGz66IrcqooOmJ9ErQdDRj3iYqbgRw4hNRvjurOctn7lC83w4LCRtKQdhxsoXhYSEWf/pub?gid=2081232822&single=true&output=csv',
+    '2024-25': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTrBZSeQ-YGYBGz66IrcqooOmJ9ErQdDRj3iYqbgRw4hNRvjurOctn7lC83w4LCRtKQdhxsoXhYSEWf/pub?gid=2081232822&single=true&output=csv', // Placeholder for other years
+  };
+
+  const [csvUrl, setCsvUrl] = useState(tariffUrls['2025-26']);
   const [tariffData, setTariffData] = useState<any[]>([]);
   const [status, setStatus] = useState<{ msg: string; type: 'info' | 'error' | 'success' | null }>({ msg: '', type: null });
   const [searchInput, setSearchInput] = useState('');
   const [assessableValue, setAssessableValue] = useState('');
+  const [currency, setCurrency] = useState('USD');
+  const [exchangeRate, setExchangeRate] = useState(120);
+  const [cargoType, setCargoType] = useState<'Ship' | 'Air' | 'Land'>('Ship');
+  const [incoterm, setIncoterm] = useState<'FOB' | 'CFR' | 'CIF' | 'CIP'>('FOB');
+  const [fobValue, setFobValue] = useState('');
+  const [freight, setFreight] = useState('');
+  const [insurance, setInsurance] = useState('');
   const [result, setResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
 
-  const loadTariffData = async () => {
-    if (!csvUrl.trim()) {
-      setStatus({ msg: "Please enter a valid CSV URL.", type: 'error' });
-      return;
-    }
+  useEffect(() => {
+    fetchExchangeRate();
+  }, [currency]);
 
+  const fetchExchangeRate = async () => {
+    try {
+      const res = await fetch(`https://open.er-api.com/v6/latest/${currency}`);
+      const data = await res.json();
+      if (data && data.rates && data.rates.BDT) {
+        setExchangeRate(data.rates.BDT);
+      }
+    } catch (err) {
+      console.error("Failed to fetch exchange rate", err);
+    }
+  };
+
+  useEffect(() => {
+    loadTariffData();
+  }, [csvUrl]);
+
+  const loadTariffData = async () => {
     setLoading(true);
     setStatus({ msg: "Loading tariff data...", type: 'info' });
     try {
@@ -1248,13 +2159,18 @@ function TariffCalculator() {
       const csvText = await response.text();
       const parsedData = parseCSV(csvText);
       setTariffData(parsedData);
-      setStatus({ msg: `Loaded ${parsedData.length} tariff entries successfully!`, type: 'success' });
+      setStatus({ msg: `Loaded ${parsedData.length} tariff entries for FY ${selectedYear} successfully!`, type: 'success' });
     } catch (err: any) {
       console.error(err);
       setStatus({ msg: "Error: " + err.message, type: 'error' });
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleYearChange = (year: string) => {
+    setSelectedYear(year);
+    setCsvUrl(tariffUrls[year]);
   };
 
   const parseCSV = (csv: string) => {
@@ -1300,14 +2216,31 @@ function TariffCalculator() {
 
   const calculate = () => {
     const input = searchInput.trim().toLowerCase();
-    const av = parseFloat(assessableValue);
+    
+    let avBDT = 0;
+    const fob = parseFloat(fobValue) || 0;
+    const fr = parseFloat(freight) || 0;
+    const ins = parseFloat(insurance) || 0;
+
+    if (incoterm === 'FOB') {
+      avBDT = (fob + fr + ins) * exchangeRate;
+    } else if (incoterm === 'CFR') {
+      avBDT = (fob + ins) * exchangeRate;
+    } else if (incoterm === 'CIF' || incoterm === 'CIP') {
+      avBDT = fob * exchangeRate;
+    }
+
+    // Fallback to direct assessable value if provided and others are not
+    if (avBDT === 0 && assessableValue) {
+      avBDT = parseFloat(assessableValue);
+    }
 
     if (!input) {
       alert("Please enter HS Code or Tariff Description.");
       return;
     }
-    if (isNaN(av) || av <= 0) {
-      alert("Please enter a valid Assessable Value.");
+    if (avBDT <= 0) {
+      alert("Please enter valid values to calculate Assessable Value.");
       return;
     }
 
@@ -1337,16 +2270,16 @@ function TariffCalculator() {
     const rdRate = item.rd || 0;
     const atRate = item.at || 0;
 
-    const cdAmount = (cdRate / 100) * av;
-    const sdAmount = (sdVal > 100) ? sdVal : (sdVal / 100) * av;
-    const customsValue = av + cdAmount + sdAmount;
+    const cdAmount = (cdRate / 100) * avBDT;
+    const sdAmount = (sdVal > 100) ? sdVal : (sdVal / 100) * avBDT;
+    const customsValue = avBDT + cdAmount + sdAmount;
     const vatAmount = (vatRate / 100) * customsValue;
     const aitAmount = (aitRate / 100) * customsValue;
     const rdAmount = (rdRate / 100) * customsValue;
     const atAmount = (atRate / 100) * customsValue;
 
     const totalTax = cdAmount + sdAmount + vatAmount + aitAmount + rdAmount + atAmount;
-    const totalPayable = av + totalTax;
+    const totalPayable = avBDT + totalTax;
 
     setResult({
       ...item,
@@ -1358,7 +2291,11 @@ function TariffCalculator() {
       atAmount,
       totalTax,
       totalPayable,
-      av
+      av: avBDT,
+      currency,
+      exchangeRate,
+      incoterm,
+      cargoType
     });
   };
 
@@ -1379,21 +2316,23 @@ function TariffCalculator() {
         
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-bold text-[#374151] mb-2">CSV Data Source URL</label>
+            <label className="block text-sm font-bold text-[#374151] mb-2">Financial Year</label>
             <div className="flex gap-2">
-              <input 
-                type="url" 
-                value={csvUrl}
-                onChange={(e) => setCsvUrl(e.target.value)}
-                className="flex-1 px-4 py-3 bg-[#F9FAFB] border border-[#E5E7EB] rounded-2xl focus:ring-2 focus:ring-[#10B981] outline-none text-sm"
-                placeholder="Enter Google Sheets CSV URL"
-              />
+              <select 
+                value={selectedYear}
+                onChange={(e) => handleYearChange(e.target.value)}
+                className="flex-1 px-4 py-3 bg-[#F9FAFB] border border-[#E5E7EB] rounded-2xl focus:ring-2 focus:ring-[#10B981] outline-none text-sm appearance-none"
+              >
+                <option value="2025-26">FY 2025-26 (Current)</option>
+                <option value="2024-25">FY 2024-25</option>
+              </select>
               <button 
                 onClick={loadTariffData}
                 disabled={loading}
-                className="px-6 py-3 bg-[#10B981] text-white rounded-2xl font-bold text-sm hover:bg-[#059669] transition-all disabled:opacity-50"
+                className="px-6 py-3 bg-[#10B981] text-white rounded-2xl font-bold text-sm hover:bg-[#059669] transition-all disabled:opacity-50 flex items-center gap-2"
               >
-                {loading ? 'Loading...' : 'Load'}
+                {loading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <History size={16} />}
+                {loading ? 'Syncing...' : 'Refresh'}
               </button>
             </div>
           </div>
@@ -1410,6 +2349,110 @@ function TariffCalculator() {
               {status.msg}
             </div>
           )}
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-bold text-[#374151] mb-2">Currency</label>
+              <select 
+                value={currency}
+                onChange={(e) => setCurrency(e.target.value)}
+                className="w-full px-4 py-3 bg-[#F9FAFB] border border-[#E5E7EB] rounded-2xl focus:ring-2 focus:ring-[#10B981] outline-none text-sm appearance-none"
+              >
+                <option value="USD">USD - US Dollar</option>
+                <option value="EUR">EUR - Euro</option>
+                <option value="GBP">GBP - British Pound</option>
+                <option value="JPY">JPY - Japanese Yen</option>
+                <option value="CNY">CNY - Chinese Yuan</option>
+                <option value="INR">INR - Indian Rupee</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-bold text-[#374151] mb-2">Exchange Rate (BDT)</label>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[#9CA3AF]">৳</div>
+                  <input 
+                    type="number" 
+                    value={exchangeRate}
+                    onChange={(e) => setExchangeRate(Number(e.target.value))}
+                    className="w-full pl-10 pr-4 py-3 bg-[#F9FAFB] border border-[#E5E7EB] rounded-2xl focus:ring-2 focus:ring-[#10B981] outline-none font-medium text-sm"
+                  />
+                </div>
+                <button 
+                  onClick={fetchExchangeRate}
+                  className="p-3 bg-zinc-100 hover:bg-zinc-200 rounded-2xl transition-all"
+                  title="Refresh Rate"
+                >
+                  <Zap size={16} className="text-brand-600" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-bold text-[#374151] mb-2">Cargo Type</label>
+              <select 
+                value={cargoType}
+                onChange={(e) => setCargoType(e.target.value as any)}
+                className="w-full px-4 py-3 bg-[#F9FAFB] border border-[#E5E7EB] rounded-2xl focus:ring-2 focus:ring-[#10B981] outline-none text-sm appearance-none"
+              >
+                <option value="Ship">🚢 Ship (Sea)</option>
+                <option value="Air">✈️ Air</option>
+                <option value="Land">🚛 Land (Road/Rail)</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-bold text-[#374151] mb-2">Incoterm</label>
+              <select 
+                value={incoterm}
+                onChange={(e) => setIncoterm(e.target.value as any)}
+                className="w-full px-4 py-3 bg-[#F9FAFB] border border-[#E5E7EB] rounded-2xl focus:ring-2 focus:ring-[#10B981] outline-none text-sm appearance-none"
+              >
+                <option value="FOB">FOB - Free On Board</option>
+                <option value="CFR">CFR - Cost and Freight</option>
+                <option value="CIF">CIF - Cost, Insurance, Freight</option>
+                <option value="CIP">CIP - Carriage & Insurance Paid</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-bold text-[#374151] mb-2">Value ({incoterm})</label>
+              <input 
+                type="number" 
+                value={fobValue}
+                onChange={(e) => setFobValue(e.target.value)}
+                className="w-full px-4 py-3 bg-[#F9FAFB] border border-[#E5E7EB] rounded-2xl focus:ring-2 focus:ring-[#10B981] outline-none font-medium text-sm"
+                placeholder="0.00"
+              />
+            </div>
+            {incoterm === 'FOB' && (
+              <div>
+                <label className="block text-sm font-bold text-[#374151] mb-2">Freight</label>
+                <input 
+                  type="number" 
+                  value={freight}
+                  onChange={(e) => setFreight(e.target.value)}
+                  className="w-full px-4 py-3 bg-[#F9FAFB] border border-[#E5E7EB] rounded-2xl focus:ring-2 focus:ring-[#10B981] outline-none font-medium text-sm"
+                  placeholder="0.00"
+                />
+              </div>
+            )}
+            {(incoterm === 'FOB' || incoterm === 'CFR') && (
+              <div>
+                <label className="block text-sm font-bold text-[#374151] mb-2">Insurance</label>
+                <input 
+                  type="number" 
+                  value={insurance}
+                  onChange={(e) => setInsurance(e.target.value)}
+                  className="w-full px-4 py-3 bg-[#F9FAFB] border border-[#E5E7EB] rounded-2xl focus:ring-2 focus:ring-[#10B981] outline-none font-medium text-sm"
+                  placeholder="0.00"
+                />
+              </div>
+            )}
+          </div>
 
           <div className="h-px bg-[#F3F4F6] my-6" />
 
@@ -1430,8 +2473,10 @@ function TariffCalculator() {
             </div>
           </div>
 
+          <div className="h-px bg-[#F3F4F6] my-6" />
+
           <div>
-            <label className="block text-sm font-bold text-[#374151] mb-2">Assessable Value (BDT)</label>
+            <label className="block text-sm font-bold text-[#374151] mb-2">Manual Assessable Value (BDT) - Optional</label>
             <div className="relative">
               <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[#9CA3AF]">৳</div>
               <input 
@@ -1439,15 +2484,15 @@ function TariffCalculator() {
                 value={assessableValue}
                 onChange={(e) => setAssessableValue(e.target.value)}
                 disabled={tariffData.length === 0}
-                className="w-full pl-10 pr-4 py-4 bg-[#F9FAFB] border border-[#E5E7EB] rounded-2xl focus:ring-2 focus:ring-[#10B981] outline-none font-medium disabled:opacity-50"
-                placeholder="0.00"
+                className="w-full pl-10 pr-4 py-4 bg-[#F9FAFB] border border-[#E5E7EB] rounded-2xl focus:ring-2 focus:ring-[#10B981] outline-none font-medium disabled:opacity-50 text-sm"
+                placeholder="Overwrites FOB calculation if provided"
               />
             </div>
           </div>
 
           <button 
             onClick={calculate}
-            disabled={tariffData.length === 0 || !searchInput || !assessableValue}
+            disabled={tariffData.length === 0 || !searchInput || (fobValue === '' && assessableValue === '')}
             className="w-full py-4 bg-[#10B981] text-white rounded-2xl font-bold shadow-lg shadow-emerald-100 hover:bg-[#059669] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
           >
             <Calculator size={20} /> Calculate Duties
@@ -1472,6 +2517,17 @@ function TariffCalculator() {
               <div className="border-b border-white/10 pb-6">
                 <h3 className="text-lg font-bold text-emerald-400 mb-1">HS Code: {result.hs}</h3>
                 <p className="text-sm text-gray-400 line-clamp-2">{result.desc}</p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <span className="px-2 py-1 bg-white/10 rounded text-[10px] font-bold uppercase tracking-wider">
+                    {result.cargoType}
+                  </span>
+                  <span className="px-2 py-1 bg-white/10 rounded text-[10px] font-bold uppercase tracking-wider">
+                    {result.incoterm}
+                  </span>
+                  <span className="px-2 py-1 bg-white/10 rounded text-[10px] font-bold uppercase tracking-wider">
+                    1 {result.currency} = {result.exchangeRate.toFixed(2)} BDT
+                  </span>
+                </div>
               </div>
 
               <div className="space-y-3">
@@ -1570,8 +2626,55 @@ function BlogView() {
 
   return (
     <div className="space-y-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+        {[
+          { title: "আয়কর আইন ২০২৩", link: "http://bdlaws.minlaw.gov.bd/act-details-1429.html", icon: <Book className="text-blue-500" /> },
+          { title: "আয়কর নির্দেশিকা ২০২৫-২৬", link: "#", icon: <FileText className="text-emerald-500" /> },
+          { title: "আয়কর পরিপত্র ২০২৫-২৬", link: "#", icon: <Shield className="text-purple-500" /> }
+        ].map((res, i) => (
+          <a key={i} href={res.link} target="_blank" rel="noopener noreferrer" className="neo-card p-6 rounded-3xl flex items-center gap-4 hover:scale-[1.02] transition-all">
+            <div className="w-12 h-12 rounded-2xl bg-zinc-50 flex items-center justify-center">
+              {res.icon}
+            </div>
+            <div>
+              <h4 className="font-bold text-sm">{res.title}</h4>
+              <p className="text-[10px] text-zinc-500">অফিসিয়াল রিসোর্স দেখুন</p>
+            </div>
+          </a>
+        ))}
+      </div>
+
+      <div className="neo-card p-10 rounded-[2.5rem] bg-zinc-900 text-white mb-12">
+        <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+          <Sparkles className="text-brand-400" />
+          ২০২৫-২৬ কর বছরের মূল পরিবর্তনসমূহ
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="space-y-4">
+            <div className="p-4 bg-white/5 rounded-2xl border border-white/10">
+              <h4 className="text-sm font-bold text-brand-400 mb-2">করমুক্ত আয়ের সীমা বৃদ্ধি</h4>
+              <p className="text-xs text-zinc-400 leading-relaxed">সাধারণ করদাতাদের জন্য করমুক্ত সীমা ৩,৫০,০০০ টাকা থেকে বাড়িয়ে ৩,৭৫,০০০ টাকা করা হয়েছে। নারী ও ৬৫+ বয়স্কদের জন্য ৪,২৫,০০০ টাকা।</p>
+            </div>
+            <div className="p-4 bg-white/5 rounded-2xl border border-white/10">
+              <h4 className="text-sm font-bold text-brand-400 mb-2">বিনিয়োগ রেয়াত (Rebate)</h4>
+              <p className="text-xs text-zinc-400 leading-relaxed">বিনিয়োগের ওপর ১৫% রেয়াত পাওয়া যাবে, তবে তা মোট আয়ের ৩% বা প্রকৃত বিনিয়োগের ১৫% বা ১০ লক্ষ টাকার মধ্যে যেটি কম তার সমান হবে।</p>
+            </div>
+          </div>
+          <div className="space-y-4">
+            <div className="p-4 bg-white/5 rounded-2xl border border-white/10">
+              <h4 className="text-sm font-bold text-brand-400 mb-2">সারচার্জ (Surcharge)</h4>
+              <p className="text-xs text-zinc-400 leading-relaxed">নিট সম্পদ ৪ কোটি টাকা অতিক্রম করলে ১০% সারচার্জ প্রযোজ্য হবে। সম্পদ ৫০ কোটি টাকার বেশি হলে ৩৫% পর্যন্ত সারচার্জ হতে পারে।</p>
+            </div>
+            <div className="p-4 bg-white/5 rounded-2xl border border-white/10">
+              <h4 className="text-sm font-bold text-brand-400 mb-2">ন্যূনতম কর (Minimum Tax)</h4>
+              <p className="text-xs text-zinc-400 leading-relaxed">ঢাকা ও চট্টগ্রাম সিটি কর্পোরেশন এলাকার জন্য ৫,০০০ টাকা, অন্যান্য সিটি কর্পোরেশনের জন্য ৪,০০০ টাকা এবং এর বাইরে ৩,০০০ টাকা।</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="flex justify-between items-center">
-        <h3 className="text-2xl font-bold">Tax & VAT Information Blog</h3>
+        <h3 className="text-2xl font-bold">Latest Updates & Blogs</h3>
         <button 
           onClick={() => setShowForm(!showForm)}
           className="px-6 py-3 bg-[#10B981] text-white rounded-2xl font-bold shadow-lg hover:bg-[#059669] transition-all flex items-center gap-2"
@@ -1738,12 +2841,19 @@ function ToolCard({ icon, title, description, color, onClick }: { icon: React.Re
 }
 
 function AIAssistant() {
-  const [messages, setMessages] = useState<{ role: 'user' | 'ai'; text: string }[]>([
-    { role: 'ai', text: "Hello! I'm your AI Tax Advisor. I can help you understand Bangladesh's tax laws, VAT regulations, and customs duties. How can I assist you today?" }
-  ]);
+  const [messages, setMessages] = useState<{ role: 'user' | 'ai'; text: string }[]>(() => {
+    const saved = localStorage.getItem('vatx_ai_chat');
+    return saved ? JSON.parse(saved) : [
+      { role: 'ai', text: "Hello! I'm your dedicated AI Tax Advisor. I can provide concise, actionable answers about Bangladesh's tax laws, VAT regulations, and customs duties. How can I help you today?" }
+    ];
+  });
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    localStorage.setItem('vatx_ai_chat', JSON.stringify(messages));
+  }, [messages]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -1751,11 +2861,24 @@ function AIAssistant() {
     }
   }, [messages]);
 
-  const handleSend = async () => {
-    if (!input.trim() || loading) return;
+  const exportChat = () => {
+    const content = messages.map(m => `${m.role.toUpperCase()}: ${m.text}`).join('\n\n---\n\n');
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `VATX_AI_Consultation_${new Date().toISOString().split('T')[0]}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
 
-    const userMessage = input.trim();
-    setInput('');
+  const handleSend = async (customMessage?: string) => {
+    const userMessage = customMessage || input.trim();
+    if (!userMessage || loading) return;
+
+    if (!customMessage) setInput('');
     setMessages(prev => [...prev, { role: 'user', text: userMessage }]);
     setLoading(true);
 
@@ -1765,7 +2888,16 @@ function AIAssistant() {
         model: "gemini-3-flash-preview",
         contents: userMessage,
         config: {
-          systemInstruction: "You are an expert Tax and VAT consultant for Bangladesh. You provide accurate information based on the National Board of Revenue (NBR) regulations. Be professional, concise, and helpful. If you're unsure about a specific legal detail, advise the user to consult a certified tax professional.",
+          systemInstruction: `You are an expert Tax, VAT, and Customs consultant for Bangladesh. 
+          Your goal is to provide concise, actionable, and accurate information based on the National Board of Revenue (NBR) regulations and the Income Tax Act 2023.
+          
+          Guidelines:
+          - Be professional and direct.
+          - Use bullet points for clarity when explaining regulations.
+          - If a query is about VAT, mention relevant SROs if applicable.
+          - If a query is about Customs, mention HS code importance.
+          - Always include a disclaimer that for complex legal matters, users should consult a certified professional.
+          - Keep answers concise but comprehensive enough to be actionable.`,
         },
       });
 
@@ -1779,100 +2911,146 @@ function AIAssistant() {
     }
   };
 
+  const quickQueries = [
+    { label: "Tax Slabs 2025", query: "What are the current income tax slabs for individuals in Bangladesh for FY 2025-26?" },
+    { label: "VAT on Software", query: "What is the VAT rate for software development and IT enabled services in Bangladesh?" },
+    { label: "Customs Duty", query: "How is customs duty calculated for imported electronics in Bangladesh?" },
+    { label: "Tax Rebate", query: "What are the rules for investment tax rebate in Bangladesh according to the 2023 Act?" }
+  ];
+
   return (
-    <div className="max-w-4xl mx-auto space-y-6 pb-32">
-      <SectionGuide 
-        title="এআই ট্যাক্স অ্যাডভাইজার গাইড"
-        steps={[
-          "ট্যাক্স বা ভ্যাট সংক্রান্ত যেকোনো প্রশ্ন টাইপ করুন।",
-          "আমাদের এআই সহকারী আপনাকে এনবিআর (NBR) আইন অনুযায়ী সঠিক তথ্য দেবে।",
-          "জটিল হিসাব বা আইনের ব্যাখ্যা সহজভাবে বুঝে নিন।",
-          "এটি আপনার ব্যক্তিগত ট্যাক্স কনসালট্যান্ট হিসেবে কাজ করবে।"
-        ]}
-      />
-      <div className="h-[calc(100vh-300px)] flex flex-col bg-white rounded-3xl shadow-sm border border-[#F3F4F6] overflow-hidden">
-      <div className="p-6 border-b border-[#F3F4F6] bg-[#F9FAFB] flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-[#10B981] rounded-xl flex items-center justify-center text-white">
-            <Bot size={24} />
+    <div className="max-w-5xl mx-auto h-[calc(100vh-180px)] flex flex-col gap-6">
+      <div className="flex-1 flex flex-col bg-white md:rounded-[3rem] shadow-2xl shadow-zinc-200/50 border border-zinc-100 overflow-hidden relative">
+        {/* Chat Header */}
+        <div className="p-6 border-b border-zinc-100 bg-white/80 backdrop-blur-md sticky top-0 z-10 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-gradient-to-tr from-brand-600 to-emerald-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-brand-600/20">
+              <Bot size={28} />
+            </div>
+            <div>
+              <h3 className="text-lg font-black font-display tracking-tight">Tax Advisor AI</h3>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Active Now</span>
+              </div>
+            </div>
           </div>
-          <div>
-            <h3 className="font-bold">AI Tax Advisor</h3>
-            <p className="text-xs text-[#6B7280]">Powered by Gemini AI</p>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={exportChat}
+              className="p-3 text-zinc-400 hover:text-brand-600 hover:bg-brand-50 rounded-2xl transition-all"
+              title="Export Conversation"
+            >
+              <Download size={20} />
+            </button>
+            <button 
+              onClick={() => {
+                localStorage.removeItem('vatx_ai_chat');
+                setMessages([{ role: 'ai', text: "Chat history cleared. How can I assist you now?" }]);
+              }}
+              className="p-3 text-zinc-400 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all"
+              title="Clear Chat"
+            >
+              <Trash2 size={20} />
+            </button>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse" />
-          <span className="text-xs font-bold text-[#10B981]">Online</span>
-        </div>
-      </div>
 
-      <div 
-        ref={scrollRef}
-        className="flex-1 overflow-y-auto p-6 space-y-6 bg-[#F8F9FA]"
-      >
-        {messages.map((msg, i) => (
-          <motion.div
-            key={i}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className={cn(
-              "flex gap-4 max-w-[80%]",
-              msg.role === 'user' ? "ml-auto flex-row-reverse" : ""
-            )}
-          >
-            <div className={cn(
-              "w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center",
-              msg.role === 'ai' ? "bg-emerald-100 text-emerald-600" : "bg-blue-100 text-blue-600"
-            )}>
-              {msg.role === 'ai' ? <Bot size={18} /> : <User size={18} />}
-            </div>
-            <div className={cn(
-              "p-4 rounded-2xl text-sm leading-relaxed shadow-sm",
-              msg.role === 'ai' ? "bg-white text-[#1A1A1A] border border-[#E5E7EB]" : "bg-[#10B981] text-white"
-            )}>
-              {msg.text}
-            </div>
-          </motion.div>
-        ))}
-        {loading && (
-          <div className="flex gap-4 max-w-[80%]">
-            <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center">
-              <Bot size={18} />
-            </div>
-            <div className="p-4 rounded-2xl bg-white border border-[#E5E7EB] flex gap-1">
-              <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-bounce" />
-              <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-bounce [animation-delay:0.2s]" />
-              <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-bounce [animation-delay:0.4s]" />
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div className="p-6 bg-white border-t border-[#F3F4F6]">
-        <div className="relative flex items-center gap-3">
-          <input 
-            type="text" 
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-            placeholder="Ask about tax slabs, VAT exemptions, or customs duties..."
-            className="flex-1 px-6 py-4 bg-[#F9FAFB] border border-[#E5E7EB] rounded-2xl focus:ring-2 focus:ring-[#10B981] outline-none transition-all"
-          />
-          <button 
-            onClick={handleSend}
-            disabled={!input.trim() || loading}
-            className="p-4 bg-[#10B981] text-white rounded-2xl shadow-lg hover:bg-[#059669] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <Send size={20} />
-          </button>
+        <div 
+          ref={scrollRef}
+          className="flex-1 overflow-y-auto p-6 md:p-10 space-y-8 custom-scrollbar bg-zinc-50/30"
+        >
+          {messages.map((msg, idx) => (
+            <motion.div 
+              key={idx}
+              initial={{ opacity: 0, y: 10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              className={cn(
+                "flex gap-4 max-w-[85%] md:max-w-[75%]",
+                msg.role === 'user' ? "ml-auto flex-row-reverse" : ""
+              )}
+            >
+              <div className={cn(
+                "w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 shadow-sm",
+                msg.role === 'ai' ? "bg-white text-brand-600 border border-zinc-100" : "bg-brand-600 text-white"
+              )}>
+                {msg.role === 'ai' ? <Bot size={20} /> : <User size={20} />}
+              </div>
+              <div className={cn(
+                "p-5 rounded-[2rem] text-sm leading-relaxed shadow-sm relative group/msg",
+                msg.role === 'ai' 
+                  ? "bg-white text-zinc-800 border border-zinc-100 rounded-tl-none" 
+                  : "bg-brand-600 text-white rounded-tr-none shadow-brand-600/20"
+              )}>
+                <div className="whitespace-pre-wrap font-medium">{msg.text}</div>
+                {msg.role === 'ai' && (
+                  <button 
+                    onClick={() => {
+                      navigator.clipboard.writeText(msg.text);
+                    }}
+                    className="absolute top-2 right-2 p-2 bg-zinc-50 rounded-xl opacity-0 group-hover/msg:opacity-100 transition-all hover:bg-zinc-100 shadow-sm"
+                    title="Copy to Clipboard"
+                  >
+                    <Copy size={14} className="text-zinc-500" />
+                  </button>
+                )}
+              </div>
+            </motion.div>
+          ))}
+          {loading && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex gap-4"
+            >
+              <div className="w-10 h-10 rounded-2xl bg-white border border-zinc-100 flex items-center justify-center text-brand-600 shadow-sm">
+                <Bot size={20} />
+              </div>
+              <div className="bg-white p-5 rounded-[2rem] rounded-tl-none border border-zinc-100 shadow-sm flex gap-1.5">
+                <div className="w-2 h-2 bg-brand-500 rounded-full animate-bounce" />
+                <div className="w-2 h-2 bg-brand-500 rounded-full animate-bounce [animation-delay:0.2s]" />
+                <div className="w-2 h-2 bg-brand-500 rounded-full animate-bounce [animation-delay:0.4s]" />
+              </div>
+            </motion.div>
+          )}
         </div>
-        <p className="text-[10px] text-center text-[#6B7280] mt-4">
-          AI can make mistakes. Consider checking important legal information with the NBR or a professional tax advisor.
-        </p>
+
+        {/* Chat Input Area */}
+        <div className="p-6 md:p-8 bg-white border-t border-zinc-100">
+          <div className="flex flex-wrap gap-2 mb-6">
+            {quickQueries.map((q, idx) => (
+              <button
+                key={idx}
+                onClick={() => handleSend(q.query)}
+                className="px-4 py-2 bg-zinc-50 hover:bg-brand-50 hover:text-brand-700 border border-zinc-100 hover:border-brand-200 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95"
+              >
+                {q.label}
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-3 relative">
+            <input 
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+              placeholder="Ask about tax, VAT, or customs..."
+              className="flex-1 pl-6 pr-16 py-5 bg-zinc-50 border border-zinc-100 rounded-[2rem] focus:outline-none focus:ring-4 focus:ring-brand-500/5 focus:border-brand-500 transition-all font-medium"
+            />
+            <button 
+              onClick={() => handleSend()}
+              disabled={!input.trim() || loading}
+              className="absolute right-2 top-2 bottom-2 w-12 bg-brand-600 text-white rounded-2xl flex items-center justify-center hover:bg-brand-700 transition-all disabled:opacity-50 disabled:scale-100 shadow-lg shadow-brand-600/20 active:scale-90"
+            >
+              <Send size={20} />
+            </button>
+          </div>
+          <p className="text-[10px] text-zinc-400 text-center mt-4 font-bold uppercase tracking-widest">
+            Verify critical info with official NBR gazettes.
+          </p>
+        </div>
       </div>
     </div>
-  </div>
   );
 }
 
@@ -3293,28 +4471,33 @@ function TaxRebatePlanner() {
     const potentialMaxRebate = maxInvestmentAllowed * 0.15;
     const additionalInvestmentNeeded = Math.max(0, maxInvestmentAllowed - inv);
 
-    // Generate suggestions
+    // Generate suggestions in Bangla
     const suggestions = [];
     if (additionalInvestmentNeeded > 0) {
       suggestions.push({
-        title: "DPS (Deposit Pension Scheme)",
-        description: "Invest up to ৳60,000 annually in a bank DPS to get full rebate on this amount.",
-        impact: "High"
+        title: "ডিপিএস (ডিপোজিট পেনশন স্কিম)",
+        description: "ব্যাংক ডিপিএস-এ বার্ষিক ৬০,০০০ টাকা পর্যন্ত বিনিয়োগ করে এই পরিমাণের ওপর পূর্ণ কর রেয়াত পান। এটি ছোট অংকের নিয়মিত সঞ্চয়ের জন্য সেরা।",
+        impact: "উচ্চ"
       });
       suggestions.push({
-        title: "Savings Certificates (Sanchaypatra)",
-        description: "One of the safest ways to invest. Purchase 5-year Bangladesh Sanchaypatra.",
-        impact: "Very High"
+        title: "সঞ্চয়পত্র (Sanchaypatra)",
+        description: "৫ বছর মেয়াদী বাংলাদেশ সঞ্চয়পত্র কিনুন। এটি অন্যতম নিরাপদ বিনিয়োগ মাধ্যম এবং মুনাফার হারও বেশ ভালো।",
+        impact: "খুব উচ্চ"
       });
       suggestions.push({
-        title: "Listed Stocks & Mutual Funds",
-        description: "Invest in the capital market through a BO account. Dividends are also tax-exempt up to ৳50,000.",
-        impact: "Medium"
+        title: "শেয়ার বাজার ও মিউচুয়াল ফান্ড",
+        description: "বিও অ্যাকাউন্টের মাধ্যমে পুঁজিবাজারে তালিকাভুক্ত শেয়ার বা মিউচুয়াল ফান্ডে বিনিয়োগ করুন। লভ্যাংশ ৫০,০০০ টাকা পর্যন্ত করমুক্ত।",
+        impact: "মাঝারি"
       });
       suggestions.push({
-        title: "Life Insurance Premiums",
-        description: "Premiums paid for life insurance of self, spouse, or children are eligible for rebate.",
-        impact: "High"
+        title: "জীবন বীমা প্রিমিয়াম",
+        description: "নিজের, স্বামী/স্ত্রী বা সন্তানদের জীবন বীমার প্রিমিয়াম কর রেয়াতের জন্য যোগ্য। এটি একই সাথে সুরক্ষা এবং কর সাশ্রয় নিশ্চিত করে।",
+        impact: "উচ্চ"
+      });
+      suggestions.push({
+        title: "ট্রেজারি বন্ড (Treasury Bond)",
+        description: "সরকারি ট্রেজারি বন্ডে বিনিয়োগ করে নিশ্চিত মুনাফা এবং কর সুবিধা গ্রহণ করুন। এটি দীর্ঘমেয়াদী সঞ্চয়ের জন্য উপযোগী।",
+        impact: "উচ্চ"
       });
     }
 
@@ -3342,51 +4525,51 @@ function TaxRebatePlanner() {
       />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="bg-white p-8 rounded-3xl shadow-sm border border-[#F3F4F6]">
-        <h3 className="text-xl font-bold mb-8 flex items-center gap-2">
-          <TrendingUp className="text-[#10B981]" />
-          Rebate Parameters
-        </h3>
-        <div className="space-y-6">
-          <div>
-            <label className="block text-sm font-bold text-[#374151] mb-2">Annual Taxable Income (BDT)</label>
-            <div className="relative">
-              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[#9CA3AF]">৳</div>
-              <input 
-                type="number" 
-                value={income}
-                onChange={(e) => setIncome(e.target.value)}
-                className="w-full pl-10 pr-4 py-4 bg-[#F9FAFB] border border-[#E5E7EB] rounded-2xl focus:ring-2 focus:ring-[#10B981] outline-none font-medium"
-                placeholder="0.00"
-              />
+          <h3 className="text-xl font-bold mb-8 flex items-center gap-2">
+            <TrendingUp className="text-[#10B981]" />
+            রেয়াত প্যারামিটার (Rebate Parameters)
+          </h3>
+          <div className="space-y-6">
+            <div>
+              <label className="block text-sm font-bold text-[#374151] mb-2">বার্ষিক করযোগ্য আয় (Annual Taxable Income - BDT)</label>
+              <div className="relative">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[#9CA3AF]">৳</div>
+                <input 
+                  type="number" 
+                  value={income}
+                  onChange={(e) => setIncome(e.target.value)}
+                  className="w-full pl-10 pr-4 py-4 bg-[#F9FAFB] border border-[#E5E7EB] rounded-2xl focus:ring-2 focus:ring-[#10B981] outline-none font-medium"
+                  placeholder="0.00"
+                />
+              </div>
             </div>
-          </div>
 
-          <div>
-            <label className="block text-sm font-bold text-[#374151] mb-2">Current Investment (BDT)</label>
-            <div className="relative">
-              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[#9CA3AF]">৳</div>
-              <input 
-                type="number" 
-                value={currentInvestment}
-                onChange={(e) => setCurrentInvestment(e.target.value)}
-                className="w-full pl-10 pr-4 py-4 bg-[#F9FAFB] border border-[#E5E7EB] rounded-2xl focus:ring-2 focus:ring-[#10B981] outline-none font-medium"
-                placeholder="DPS, Savings, Stocks, etc."
-              />
+            <div>
+              <label className="block text-sm font-bold text-[#374151] mb-2">বর্তমান বিনিয়োগ (Current Investment - BDT)</label>
+              <div className="relative">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[#9CA3AF]">৳</div>
+                <input 
+                  type="number" 
+                  value={currentInvestment}
+                  onChange={(e) => setCurrentInvestment(e.target.value)}
+                  className="w-full pl-10 pr-4 py-4 bg-[#F9FAFB] border border-[#E5E7EB] rounded-2xl focus:ring-2 focus:ring-[#10B981] outline-none font-medium"
+                  placeholder="ডিপিএস, সঞ্চয়পত্র, শেয়ার ইত্যাদি"
+                />
+              </div>
             </div>
-          </div>
 
-          <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
-            <p className="text-xs text-emerald-700 leading-relaxed">
-              <strong>Tip:</strong> In Bangladesh, you can get a tax rebate of up to 15% on your investments. Common eligible sectors include DPS, Life Insurance, Savings Certificates, and Listed Stocks.
-            </p>
-          </div>
+            <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
+              <p className="text-xs text-emerald-700 leading-relaxed">
+                <strong>পরামর্শ:</strong> বাংলাদেশে আপনি আপনার বিনিয়োগের ওপর ১৫% পর্যন্ত কর রেয়াত পেতে পারেন। সাধারণ যোগ্য খাতগুলোর মধ্যে রয়েছে ডিপিএস, জীবন বীমা, সঞ্চয়পত্র এবং তালিকাভুক্ত শেয়ার।
+              </p>
+            </div>
 
-          <button 
-            onClick={calculateRebate}
-            className="w-full py-4 bg-[#10B981] text-white rounded-2xl font-bold shadow-lg hover:bg-[#059669] transition-all flex items-center justify-center gap-2"
-          >
-            <Calculator size={20} /> Plan My Rebate
-          </button>
+            <button 
+              onClick={calculateRebate}
+              className="w-full py-4 bg-[#10B981] text-white rounded-2xl font-bold shadow-lg hover:bg-[#059669] transition-all flex items-center justify-center gap-2"
+            >
+              <Calculator size={20} /> রেয়াত পরিকল্পনা করুন (Plan My Rebate)
+            </button>
         </div>
       </div>
 
@@ -3398,7 +4581,7 @@ function TaxRebatePlanner() {
             className="bg-[#111827] text-white p-8 rounded-3xl shadow-xl space-y-8"
           >
             <div className="flex justify-between items-start">
-              <h3 className="text-lg font-bold text-emerald-400">Rebate Summary</h3>
+              <h3 className="text-lg font-bold text-emerald-400">রেয়াত সারাংশ (Rebate Summary)</h3>
               <div className="px-3 py-1 bg-emerald-500/20 text-emerald-400 rounded-full text-[10px] font-bold uppercase tracking-wider">
                 Optimized
               </div>
@@ -3406,26 +4589,26 @@ function TaxRebatePlanner() {
 
             <div className="grid grid-cols-2 gap-6">
               <div>
-                <p className="text-xs text-gray-400 mb-1">Current Rebate</p>
+                <p className="text-xs text-gray-400 mb-1">বর্তমান রেয়াত (Current Rebate)</p>
                 <p className="text-2xl font-bold font-mono">৳{result.rebateAmount.toLocaleString()}</p>
               </div>
               <div>
-                <p className="text-xs text-gray-400 mb-1">Max Potential</p>
+                <p className="text-xs text-gray-400 mb-1">সর্বোচ্চ সম্ভাব্য (Max Potential)</p>
                 <p className="text-2xl font-bold font-mono text-emerald-400">৳{result.potentialMaxRebate.toLocaleString()}</p>
               </div>
             </div>
 
             <div className="space-y-4 pt-4 border-t border-white/10">
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-400">Allowable Investment Limit</span>
+                <span className="text-sm text-gray-400">অনুমোদিত বিনিয়োগের সীমা (Investment Limit)</span>
                 <span className="font-mono">৳{result.maxInvestmentAllowed.toLocaleString()}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-400">Investment Gap</span>
+                <span className="text-sm text-gray-400">বিনিয়োগের ঘাটতি (Investment Gap)</span>
                 <span className="font-mono text-amber-400">৳{result.additionalInvestmentNeeded.toLocaleString()}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-400">Tax Savings Opportunity</span>
+                <span className="text-sm text-gray-400">ট্যাক্স সাশ্রয়ের সুযোগ (Savings Opportunity)</span>
                 <span className="font-mono text-emerald-400">৳{result.gap.toLocaleString()}</span>
               </div>
             </div>
@@ -3434,14 +4617,14 @@ function TaxRebatePlanner() {
               <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl">
                 <p className="text-xs text-amber-200 leading-relaxed">
                   <AlertCircle size={14} className="inline mr-1 mb-0.5" />
-                  You are missing out on <strong>৳{result.gap.toLocaleString()}</strong> in tax savings. Invest an additional <strong>৳{result.additionalInvestmentNeeded.toLocaleString()}</strong> before the tax year ends to maximize your rebate.
+                  আপনি <strong>৳{result.gap.toLocaleString()}</strong> ট্যাক্স সাশ্রয় মিস করছেন। কর বছর শেষ হওয়ার আগে অতিরিক্ত <strong>৳{result.additionalInvestmentNeeded.toLocaleString()}</strong> বিনিয়োগ করুন।
                 </p>
               </div>
             ) : (
               <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl">
                 <p className="text-xs text-emerald-200 leading-relaxed">
                   <CheckCircle2 size={14} className="inline mr-1 mb-0.5" />
-                  Congratulations! You have maximized your tax rebate for this income level.
+                  অভিনন্দন! আপনি আপনার আয়ের স্তরের জন্য সর্বোচ্চ ট্যাক্স রেয়াত নিশ্চিত করেছেন।
                 </p>
               </div>
             )}
@@ -3449,7 +4632,7 @@ function TaxRebatePlanner() {
             {result.suggestions && result.suggestions.length > 0 && (
               <div className="space-y-4 pt-4 border-t border-white/10">
                 <h4 className="text-sm font-bold text-emerald-400 flex items-center gap-2">
-                  <Sparkles size={16} /> Rebate Suggestions
+                  <Sparkles size={16} /> রেয়াত পরামর্শ (Rebate Suggestions)
                 </h4>
                 <div className="space-y-3">
                   {result.suggestions.map((s: any, i: number) => (
@@ -3611,6 +4794,24 @@ function HSCodeFinder() {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [fobValue, setFobValue] = useState<number>(0);
+  const [insurance, setInsurance] = useState<number>(1); // Default 1%
+  const [freight, setFreight] = useState<number>(0);
+
+  const calculateTotalDuty = (item: any) => {
+    const cfr = fobValue + freight;
+    const insuranceValue = (cfr * insurance) / 100;
+    const assessableValue = cfr + insuranceValue;
+    
+    const cd = (assessableValue * item.cd) / 100;
+    const rd = (assessableValue * item.rd) / 100;
+    const sd = ((assessableValue + cd + rd) * item.sd) / 100;
+    const vat = ((assessableValue + cd + rd + sd) * item.vat) / 100;
+    const ait = (assessableValue * item.ait) / 100;
+    const at = (assessableValue * item.at) / 100;
+    
+    return cd + rd + sd + vat + ait + at;
+  };
 
   const searchHSCode = async () => {
     if (!query.trim()) return;
@@ -3641,27 +4842,83 @@ function HSCodeFinder() {
           "ভুল এইচএস কোড ব্যবহারের ঝুঁকি এড়ান।"
         ]}
       />
-      <div className="bg-white p-8 rounded-3xl shadow-sm border border-[#F3F4F6]">
-        <h3 className="text-xl font-bold mb-6">AI-Powered HS Code Finder</h3>
-        <div className="flex gap-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#9CA3AF]" size={20} />
-            <input 
-              type="text" 
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && searchHSCode()}
-              placeholder="Search by product name (e.g., 'solar panel', 'electric motor')..."
-              className="w-full pl-12 pr-4 py-4 bg-[#F9FAFB] border border-[#E5E7EB] rounded-2xl focus:ring-2 focus:ring-[#10B981] outline-none font-medium"
-            />
+      <div className="bg-white p-10 rounded-[3rem] shadow-xl shadow-zinc-200/50 border border-zinc-100 relative overflow-hidden">
+        <div className="absolute top-0 right-0 p-6">
+          <div className="flex items-center gap-2 px-3 py-1 bg-brand-50 text-brand-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-brand-100">
+            <Cpu size={12} /> Asycuda BI System
           </div>
-          <button 
-            onClick={searchHSCode}
-            disabled={loading || !query.trim()}
-            className="px-8 py-4 bg-[#10B981] text-white rounded-2xl font-bold shadow-lg hover:bg-[#059669] transition-all disabled:opacity-50 flex items-center gap-2"
-          >
-            {loading ? 'Searching...' : <><Search size={20} /> Find Codes</>}
-          </button>
+        </div>
+        
+        <h3 className="text-2xl font-black font-display tracking-tight mb-8 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center text-brand-600">
+            <Search size={24} />
+          </div>
+          AI-Powered HS Code Finder
+        </h3>
+
+        <div className="space-y-8">
+          <div className="flex gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-400" size={20} />
+              <input 
+                type="text" 
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && searchHSCode()}
+                placeholder="Search by product name (e.g., 'solar panel', 'electric motor')..."
+                className="w-full pl-14 pr-4 py-5 bg-zinc-50 border border-zinc-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-brand-500/5 focus:border-brand-500 transition-all font-medium text-sm"
+              />
+            </div>
+            <button 
+              onClick={searchHSCode}
+              disabled={loading || !query.trim()}
+              className="px-10 py-5 bg-brand-500 text-white rounded-2xl font-black shadow-xl shadow-brand-500/20 hover:bg-brand-600 transition-all disabled:opacity-50 flex items-center gap-3 active:scale-95"
+            >
+              {loading ? 'Searching...' : <><Search size={20} /> Find Codes</>}
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t border-zinc-50">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-1">FoB Value (USD)</label>
+              <div className="relative">
+                <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" size={16} />
+                <input 
+                  type="number" 
+                  value={fobValue || ''}
+                  onChange={(e) => setFobValue(Number(e.target.value))}
+                  placeholder="0.00"
+                  className="w-full pl-10 pr-4 py-3.5 bg-zinc-50 border border-zinc-100 rounded-xl text-sm focus:outline-none focus:border-brand-500 transition-all"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-1">Insurance (%)</label>
+              <div className="relative">
+                <Percent className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" size={16} />
+                <input 
+                  type="number" 
+                  value={insurance || ''}
+                  onChange={(e) => setInsurance(Number(e.target.value))}
+                  placeholder="1.0"
+                  className="w-full pl-10 pr-4 py-3.5 bg-zinc-50 border border-zinc-100 rounded-xl text-sm focus:outline-none focus:border-brand-500 transition-all"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-1">Freight (USD)</label>
+              <div className="relative">
+                <Truck className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" size={16} />
+                <input 
+                  type="number" 
+                  value={freight || ''}
+                  onChange={(e) => setFreight(Number(e.target.value))}
+                  placeholder="0.00"
+                  className="w-full pl-10 pr-4 py-3.5 bg-zinc-50 border border-zinc-100 rounded-xl text-sm focus:outline-none focus:border-brand-500 transition-all"
+                />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -3696,10 +4953,20 @@ function HSCodeFinder() {
                 </div>
               </div>
               
-              <div className="mt-6 pt-6 border-t border-[#F3F4F6] flex justify-between items-center">
-                <p className="text-[10px] text-[#9CA3AF] uppercase font-bold tracking-widest">Data provided by AI Advisor</p>
-                <button className="text-sm font-bold text-[#10B981] hover:underline flex items-center gap-1">
-                  Use in Calculator <ChevronRight size={16} />
+              <div className="mt-8 pt-8 border-t border-zinc-100 flex flex-col md:flex-row justify-between items-center gap-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600">
+                    <Calculator size={20} />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Estimated Total Duty</p>
+                    <p className="text-lg font-black text-zinc-900">
+                      {fobValue > 0 ? `৳${calculateTotalDuty(item).toLocaleString(undefined, { maximumFractionDigits: 2 })}` : 'Enter FoB to calculate'}
+                    </p>
+                  </div>
+                </div>
+                <button className="w-full md:w-auto px-6 py-3 bg-zinc-900 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-zinc-800 transition-all active:scale-95 flex items-center justify-center gap-2">
+                  Apply to Manifest <ChevronRight size={16} />
                 </button>
               </div>
             </motion.div>
@@ -4454,6 +5721,996 @@ function TokenizedCertificates() {
               <p className="text-sm text-zinc-400 mt-2 max-w-[250px] mx-auto">Select a certificate type above to mint your first Soulbound Token.</p>
             </div>
           )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function IncomeTaxAdvisory() {
+  const [income, setIncome] = useState({
+    salary: '',
+    houseProperty: '',
+    business: '',
+    capitalGains: '',
+    otherSources: '',
+    investments: ''
+  });
+  const [advice, setAdvice] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [ocrLoading, setOcrLoading] = useState(false);
+  const [estimation, setEstimation] = useState<any>(null);
+
+  const calculateTax = () => {
+    const incomeValues = Object.values(income) as string[];
+    const totalIncome = incomeValues.reduce((acc: number, val: string) => acc + (parseFloat(val) || 0), 0) - (parseFloat(income.investments) || 0);
+    
+    // Basic Bangladesh Tax Slab (Simplified for 2024-25/2025-26)
+    // 0-3.5L: 0%
+    // 3.5-4.5L: 5%
+    // 4.5-7.5L: 10%
+    // 7.5-11.5L: 15%
+    // 11.5-16.5L: 20%
+    // Above 16.5L: 25%
+    
+    let tax = 0;
+    let remaining = totalIncome;
+    
+    const slabs = [
+      { limit: 350000, rate: 0 },
+      { limit: 100000, rate: 0.05 },
+      { limit: 300000, rate: 0.10 },
+      { limit: 400000, rate: 0.15 },
+      { limit: 500000, rate: 0.20 },
+      { limit: Infinity, rate: 0.25 }
+    ];
+
+    for (const slab of slabs) {
+      if (remaining <= 0) break;
+      const taxableInSlab = Math.min(remaining, slab.limit);
+      tax += taxableInSlab * slab.rate;
+      remaining -= taxableInSlab;
+    }
+
+    setEstimation({
+      totalIncome,
+      tax,
+      monthly: tax / 12
+    });
+  };
+
+  const getAIAdvice = async () => {
+    setLoading(true);
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: `As a professional tax advisor in Bangladesh, analyze this income profile and provide tax-saving advice and compliance tips. 
+        Income Details:
+        - Salary: ${income.salary} BDT
+        - House Property: ${income.houseProperty} BDT
+        - Business: ${income.business} BDT
+        - Capital Gains: ${income.capitalGains} BDT
+        - Other: ${income.otherSources} BDT
+        - Investments: ${income.investments} BDT
+        
+        Provide advice in a structured format with bullet points.`,
+      });
+      setAdvice(response.text || 'No advice received.');
+    } catch (err) {
+      console.error(err);
+      setAdvice('Error fetching advice. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOCR = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setOcrLoading(true);
+    try {
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const base64Data = (reader.result as string).split(',')[1];
+        const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+        const response = await ai.models.generateContent({
+          model: "gemini-3-flash-preview",
+          contents: [
+            { text: "Extract income and investment details from this document image. Return a JSON object with keys: salary, houseProperty, business, capitalGains, otherSources, investments. Use 0 if not found." },
+            { inlineData: { mimeType: file.type, data: base64Data } }
+          ],
+        });
+
+        const text = response.text || '{}';
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const extracted = JSON.parse(jsonMatch[0]);
+          setIncome(prev => ({ ...prev, ...extracted }));
+        }
+      };
+      reader.readAsDataURL(file);
+    } catch (err) {
+      console.error(err);
+      alert('OCR failed. Please try manual entry.');
+    } finally {
+      setOcrLoading(false);
+    }
+  };
+
+  return (
+    <div className="max-w-6xl mx-auto space-y-12 pb-32">
+      <SectionGuide 
+        title="ইনকাম ট্যাক্স অ্যাডভাইজরি গাইড"
+        steps={[
+          "আপনার আয়ের বিভিন্ন উৎস অনুযায়ী টাকার পরিমাণ লিখুন।",
+          "আপনার যদি কোনো বিনিয়োগ (Investment) থাকে তবে তা উল্লেখ করুন যা কর রেয়াত পেতে সাহায্য করবে।",
+          "আপনার ট্যাক্স ডকুমেন্টের ছবি আপলোড করে স্বয়ংক্রিয়ভাবে তথ্য পূরণ করতে পারেন (OCR)।",
+          "'Get AI Advice' বাটনে ক্লিক করে আপনার আয়ের ওপর ভিত্তি করে বিশেষজ্ঞ পরামর্শ গ্রহণ করুন।"
+        ]}
+      />
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+        <div className="space-y-8">
+          <div className="neo-card p-10 rounded-[2.5rem] space-y-8">
+            <div className="flex items-center justify-between">
+              <h3 className="text-2xl font-bold">Income Details</h3>
+              <div className="relative">
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  onChange={handleOCR} 
+                  className="hidden" 
+                  id="ocr-upload" 
+                />
+                <label 
+                  htmlFor="ocr-upload"
+                  className="flex items-center gap-2 px-4 py-2 bg-brand-50 text-brand-600 rounded-xl text-xs font-bold cursor-pointer hover:bg-brand-100 transition-all"
+                >
+                  {ocrLoading ? <div className="w-4 h-4 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" /> : <Camera size={16} />}
+                  {ocrLoading ? 'Scanning...' : 'Scan Document'}
+                </label>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {[
+                { label: 'Annual Salary', key: 'salary' },
+                { label: 'House Property', key: 'houseProperty' },
+                { label: 'Business Income', key: 'business' },
+                { label: 'Capital Gains', key: 'capitalGains' },
+                { label: 'Other Sources', key: 'otherSources' },
+                { label: 'Investments', key: 'investments' },
+              ].map((item) => (
+                <div key={item.key} className="space-y-2">
+                  <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">{item.label}</label>
+                  <div className="relative">
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400">৳</div>
+                    <input 
+                      type="number"
+                      value={income[item.key as keyof typeof income]}
+                      onChange={(e) => setIncome({ ...income, [item.key]: e.target.value })}
+                      className="w-full pl-10 pr-4 py-4 bg-zinc-50 border border-zinc-100 rounded-2xl focus:ring-2 focus:ring-brand-500 outline-none font-medium"
+                      placeholder="0.00"
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex gap-4">
+              <button 
+                onClick={calculateTax}
+                className="flex-1 py-5 bg-zinc-900 text-white rounded-2xl font-bold text-sm uppercase tracking-widest hover:bg-black transition-all"
+              >
+                Estimate Tax
+              </button>
+              <button 
+                onClick={getAIAdvice}
+                disabled={loading}
+                className="flex-1 py-5 bg-brand-500 text-white rounded-2xl font-bold text-sm uppercase tracking-widest hover:bg-brand-600 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {loading ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Sparkles size={18} />}
+                Get AI Advice
+              </button>
+            </div>
+          </div>
+
+          {estimation && (
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="neo-card p-10 rounded-[2.5rem] bg-zinc-900 text-white space-y-8"
+            >
+              <h4 className="text-xl font-bold text-zinc-400">Tax Estimation</h4>
+              <div className="grid grid-cols-2 gap-8">
+                <div>
+                  <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1">Total Taxable Income</p>
+                  <p className="text-3xl font-black tracking-tighter">৳{estimation.totalIncome.toLocaleString()}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1">Estimated Annual Tax</p>
+                  <p className="text-3xl font-black tracking-tighter text-brand-400">৳{estimation.tax.toLocaleString()}</p>
+                </div>
+              </div>
+              <div className="p-6 bg-white/5 rounded-3xl border border-white/10">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-zinc-400">Monthly Tax Liability</span>
+                  <span className="text-xl font-bold">৳{Math.round(estimation.monthly).toLocaleString()}</span>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </div>
+
+        <div className="space-y-8">
+          <div className="neo-card p-10 rounded-[2.5rem] min-h-[600px] flex flex-col">
+            <div className="flex items-center gap-3 mb-8">
+              <div className="w-12 h-12 bg-brand-50 rounded-2xl flex items-center justify-center text-brand-500">
+                <Bot size={28} />
+              </div>
+              <div>
+                <h3 className="text-2xl font-bold">AI Tax Advisor</h3>
+                <p className="text-xs text-zinc-500 font-medium uppercase tracking-widest">Personalized Compliance Strategy</p>
+              </div>
+            </div>
+
+            {advice ? (
+              <div className="flex-1 prose prose-zinc max-w-none">
+                <div className="p-8 bg-zinc-50 rounded-[2rem] border border-zinc-100">
+                  <div className="markdown-body whitespace-pre-wrap text-sm leading-relaxed text-zinc-600">
+                    {advice}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="flex-1 flex flex-col items-center justify-center text-center space-y-6 opacity-40">
+                <div className="w-24 h-24 bg-zinc-50 rounded-full flex items-center justify-center">
+                  <MessageSquare size={48} className="text-zinc-300" />
+                </div>
+                <div className="space-y-2">
+                  <h4 className="text-xl font-bold">No Advice Yet</h4>
+                  <p className="text-sm max-w-[250px] mx-auto">Fill in your income details and click 'Get AI Advice' to receive personalized tax tips.</p>
+                </div>
+              </div>
+            )}
+
+            <div className="mt-8 pt-8 border-t border-zinc-100 flex justify-between items-center">
+              <div className="flex items-center gap-2 text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+                <ShieldCheck size={14} />
+                Confidential Analysis
+              </div>
+              <button className="p-3 bg-zinc-50 text-zinc-400 rounded-xl hover:text-brand-500 transition-all">
+                <Download size={20} />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FinalTaxCalculator() {
+  const [inputs, setInputs] = useState({
+    category: 'general',
+    location: 'dhaka-ctg',
+    salaryIncome: '',
+    businessIncome: '',
+    businessExpenses: '',
+    capitalGains: '',
+    rentalIncome: '',
+    interestIncome: '',
+    dividendIncome: '',
+    customDeductions: '',
+    investment: '',
+    netWealth: ''
+  });
+  const [result, setResult] = useState<any>(null);
+  const [aiAnalysis, setAiAnalysis] = useState<string>('');
+  const [isAiLoading, setIsAiLoading] = useState(false);
+
+  const getAIAnalysis = async (taxData: any) => {
+    setIsAiLoading(true);
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
+      const model = ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: [{
+          parts: [{
+            text: `As a Bangladeshi Tax Expert, analyze this tax calculation for FY 2025-26 and provide advice in Bangla. 
+            Detailed Income Breakdown:
+            - Salary: ${inputs.salaryIncome} BDT
+            - Business: ${inputs.businessIncome} BDT (Expenses: ${inputs.businessExpenses} BDT)
+            - Capital Gains: ${inputs.capitalGains} BDT
+            - Rent: ${inputs.rentalIncome} BDT
+            - Interest: ${inputs.interestIncome} BDT
+            - Dividends: ${inputs.dividendIncome} BDT
+            - Custom Deductions: ${inputs.customDeductions} BDT
+            - Investment: ${inputs.investment} BDT
+            - Net Wealth: ${inputs.netWealth} BDT
+            
+            Calculation Results:
+            - Gross Tax: ${taxData.grossTax} BDT
+            - Rebate: ${taxData.rebate} BDT
+            - Net Tax: ${taxData.netTax} BDT
+            - Surcharge: ${taxData.surcharge} BDT
+            - Total Payable: ${taxData.totalPayable} BDT
+            
+            Please provide:
+            1. A summary of the tax liability.
+            2. Suggestions for further tax savings if possible.
+            3. Any specific compliance notes based on the Income Tax Act 2023.`
+          }]
+        }]
+      });
+      const response = await model;
+      setAiAnalysis(response.text || '');
+    } catch (error) {
+      console.error("AI Analysis Error:", error);
+      setAiAnalysis("দুঃখিত, এই মুহূর্তে এআই বিশ্লেষণ পাওয়া যাচ্ছে না। অনুগ্রহ করে পরে চেষ্টা করুন।");
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
+
+  const calculateFinalTax = () => {
+    const salary = parseFloat(inputs.salaryIncome) || 0;
+    const business = parseFloat(inputs.businessIncome) || 0;
+    const businessExp = parseFloat(inputs.businessExpenses) || 0;
+    const capGains = parseFloat(inputs.capitalGains) || 0;
+    const rent = parseFloat(inputs.rentalIncome) || 0;
+    const interest = parseFloat(inputs.interestIncome) || 0;
+    const dividend = parseFloat(inputs.dividendIncome) || 0;
+    const customDed = parseFloat(inputs.customDeductions) || 0;
+    
+    const income = salary + Math.max(0, business - businessExp) + capGains + rent + interest + dividend - customDed;
+    
+    const investment = parseFloat(inputs.investment) || 0;
+    const wealth = parseFloat(inputs.netWealth) || 0;
+
+    // 1. Determine Threshold (2025-26)
+    let threshold = 375000;
+    if (inputs.category === 'female-senior') threshold = 425000;
+    if (inputs.category === 'disabled') threshold = 500000;
+    if (inputs.category === 'veteran') threshold = 525000;
+
+    // 2. Calculate Gross Tax based on Slabs
+    let tax = 0;
+    let remaining = income;
+
+    const slabs = [
+      { limit: threshold, rate: 0 },
+      { limit: 300000, rate: 0.10 },
+      { limit: 400000, rate: 0.15 },
+      { limit: 500000, rate: 0.20 },
+      { limit: 2000000, rate: 0.25 },
+      { limit: Infinity, rate: 0.30 }
+    ];
+
+    for (const slab of slabs) {
+      if (remaining <= 0) break;
+      const taxableInSlab = Math.min(remaining, slab.limit);
+      tax += taxableInSlab * slab.rate;
+      remaining -= taxableInSlab;
+    }
+
+    // 3. Calculate Rebate (Circular Page 60)
+    // Rebate = 15% of investment, limited by 3% of total income or 10L
+    const rebateLimit1 = income * 0.03;
+    const rebateLimit2 = investment * 0.15;
+    const rebateLimit3 = 1000000;
+    const rebate = Math.min(rebateLimit1, rebateLimit2, rebateLimit3);
+
+    let netTax = Math.max(0, tax - rebate);
+
+    // 4. Minimum Tax
+    let minTax = 3000;
+    if (inputs.location === 'dhaka-ctg') minTax = 5000;
+    if (inputs.location === 'other-city') minTax = 4000;
+
+    if (income > threshold && netTax < minTax) {
+      netTax = minTax;
+    }
+
+    // 5. Surcharge (Circular Page 68)
+    let surcharge = 0;
+    if (wealth > 40000000) { // > 4 Crore
+      if (wealth <= 100000000) surcharge = netTax * 0.10;
+      else if (wealth <= 200000000) surcharge = netTax * 0.20;
+      else if (wealth <= 500000000) surcharge = netTax * 0.30;
+      else surcharge = netTax * 0.35;
+    }
+
+    const totalPayable = netTax + surcharge;
+
+    setResult({
+      totalTaxableIncome: income,
+      grossTax: tax,
+      rebate,
+      netTax,
+      surcharge,
+      totalPayable,
+      threshold
+    });
+
+    // Auto-trigger AI analysis
+    getAIAnalysis({
+      totalTaxableIncome: income,
+      grossTax: tax,
+      rebate,
+      netTax,
+      surcharge,
+      totalPayable,
+      threshold
+    });
+  };
+
+  return (
+    <div className="max-w-6xl mx-auto space-y-12 pb-32">
+      <SectionGuide 
+        title="চূড়ান্ত ট্যাক্স ক্যালকুলেটর (আইন ও পরিপত্র ২০২৫-২৬)"
+        steps={[
+          "আপনার করদাতার ক্যাটাগরি এবং অবস্থান নির্বাচন করুন।",
+          "আপনার মোট বার্ষিক আয় এবং বিনিয়োগের পরিমাণ লিখুন।",
+          "আপনার নিট সম্পদের পরিমাণ দিন (সারচার্জ হিসাবের জন্য)।",
+          "সিস্টেম আয়কর আইন ২০২৩ এবং ২০২৫-২৬ এর পরিপত্র অনুযায়ী সঠিক ট্যাক্স হিসাব করবে।"
+        ]}
+      />
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+        <div className="neo-card p-10 rounded-[2.5rem] space-y-8">
+          <h3 className="text-2xl font-bold">Tax Parameters</h3>
+          
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Taxpayer Category</label>
+                <select 
+                  value={inputs.category}
+                  onChange={(e) => setInputs({ ...inputs, category: e.target.value })}
+                  className="w-full px-4 py-4 bg-zinc-50 border border-zinc-100 rounded-2xl focus:ring-2 focus:ring-brand-500 outline-none font-medium appearance-none"
+                >
+                  <option value="general">General (সাধারণ)</option>
+                  <option value="female-senior">Female / Senior (65+)</option>
+                  <option value="disabled">Disabled / Third Gender</option>
+                  <option value="veteran">War-wounded Veteran</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Location</label>
+                <select 
+                  value={inputs.location}
+                  onChange={(e) => setInputs({ ...inputs, location: e.target.value })}
+                  className="w-full px-4 py-4 bg-zinc-50 border border-zinc-100 rounded-2xl focus:ring-2 focus:ring-brand-500 outline-none font-medium appearance-none"
+                >
+                  <option value="dhaka-ctg">Dhaka/Ctg City Corp</option>
+                  <option value="other-city">Other City Corp</option>
+                  <option value="outside">Outside City Corp</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <h4 className="text-xs font-black text-zinc-900 uppercase tracking-widest border-b border-zinc-100 pb-2">Income Sources</h4>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Salary Income</label>
+                  <div className="relative">
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400">৳</div>
+                    <input 
+                      type="number"
+                      value={inputs.salaryIncome}
+                      onChange={(e) => setInputs({ ...inputs, salaryIncome: e.target.value })}
+                      className="w-full pl-10 pr-4 py-3 bg-zinc-50 border border-zinc-100 rounded-2xl focus:ring-2 focus:ring-brand-500 outline-none font-medium text-sm"
+                      placeholder="0.00"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Rental Income</label>
+                  <div className="relative">
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400">৳</div>
+                    <input 
+                      type="number"
+                      value={inputs.rentalIncome}
+                      onChange={(e) => setInputs({ ...inputs, rentalIncome: e.target.value })}
+                      className="w-full pl-10 pr-4 py-3 bg-zinc-50 border border-zinc-100 rounded-2xl focus:ring-2 focus:ring-brand-500 outline-none font-medium text-sm"
+                      placeholder="0.00"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Business Income</label>
+                  <div className="relative">
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400">৳</div>
+                    <input 
+                      type="number"
+                      value={inputs.businessIncome}
+                      onChange={(e) => setInputs({ ...inputs, businessIncome: e.target.value })}
+                      className="w-full pl-10 pr-4 py-3 bg-zinc-50 border border-zinc-100 rounded-2xl focus:ring-2 focus:ring-brand-500 outline-none font-medium text-sm"
+                      placeholder="0.00"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Business Expenses</label>
+                  <div className="relative">
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400">৳</div>
+                    <input 
+                      type="number"
+                      value={inputs.businessExpenses}
+                      onChange={(e) => setInputs({ ...inputs, businessExpenses: e.target.value })}
+                      className="w-full pl-10 pr-4 py-3 bg-zinc-50 border border-zinc-100 rounded-2xl focus:ring-2 focus:ring-brand-500 outline-none font-medium text-sm"
+                      placeholder="0.00"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Interest Income</label>
+                  <div className="relative">
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400">৳</div>
+                    <input 
+                      type="number"
+                      value={inputs.interestIncome}
+                      onChange={(e) => setInputs({ ...inputs, interestIncome: e.target.value })}
+                      className="w-full pl-10 pr-4 py-3 bg-zinc-50 border border-zinc-100 rounded-2xl focus:ring-2 focus:ring-brand-500 outline-none font-medium text-sm"
+                      placeholder="0.00"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Dividend Income</label>
+                  <div className="relative">
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400">৳</div>
+                    <input 
+                      type="number"
+                      value={inputs.dividendIncome}
+                      onChange={(e) => setInputs({ ...inputs, dividendIncome: e.target.value })}
+                      className="w-full pl-10 pr-4 py-3 bg-zinc-50 border border-zinc-100 rounded-2xl focus:ring-2 focus:ring-brand-500 outline-none font-medium text-sm"
+                      placeholder="0.00"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Capital Gains</label>
+                  <div className="relative">
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400">৳</div>
+                    <input 
+                      type="number"
+                      value={inputs.capitalGains}
+                      onChange={(e) => setInputs({ ...inputs, capitalGains: e.target.value })}
+                      className="w-full pl-10 pr-4 py-3 bg-zinc-50 border border-zinc-100 rounded-2xl focus:ring-2 focus:ring-brand-500 outline-none font-medium text-sm"
+                      placeholder="0.00"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Custom Deductions</label>
+                  <div className="relative">
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400">৳</div>
+                    <input 
+                      type="number"
+                      value={inputs.customDeductions}
+                      onChange={(e) => setInputs({ ...inputs, customDeductions: e.target.value })}
+                      className="w-full pl-10 pr-4 py-3 bg-zinc-50 border border-zinc-100 rounded-2xl focus:ring-2 focus:ring-brand-500 outline-none font-medium text-sm"
+                      placeholder="0.00"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Total Investment</label>
+              <div className="relative">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400">৳</div>
+                <input 
+                  type="number"
+                  value={inputs.investment}
+                  onChange={(e) => setInputs({ ...inputs, investment: e.target.value })}
+                  className="w-full pl-10 pr-4 py-4 bg-zinc-50 border border-zinc-100 rounded-2xl focus:ring-2 focus:ring-brand-500 outline-none font-medium"
+                  placeholder="0.00"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Net Wealth (নিট সম্পদ)</label>
+              <div className="relative">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400">৳</div>
+                <input 
+                  type="number"
+                  value={inputs.netWealth}
+                  onChange={(e) => setInputs({ ...inputs, netWealth: e.target.value })}
+                  className="w-full pl-10 pr-4 py-4 bg-zinc-50 border border-zinc-100 rounded-2xl focus:ring-2 focus:ring-brand-500 outline-none font-medium"
+                  placeholder="0.00"
+                />
+              </div>
+              <p className="text-[10px] text-zinc-500 italic">* ৪ কোটি টাকার বেশি সম্পদ থাকলে সারচার্জ প্রযোজ্য হবে।</p>
+            </div>
+
+            <button 
+              onClick={calculateFinalTax}
+              className="w-full py-5 bg-zinc-900 text-white rounded-2xl font-bold text-sm uppercase tracking-widest hover:bg-black transition-all flex items-center justify-center gap-2"
+            >
+              {isAiLoading ? <Zap className="animate-pulse" /> : <Calculator size={18} />}
+              Calculate Final Tax & AI Analysis
+            </button>
+
+            <div className="pt-4 border-t border-zinc-100">
+              <a 
+                href="https://chat.qwen.ai/s/deploy/t_c3dc4eaf-5703-45b2-91b1-a60551a1efb4"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full py-4 bg-brand-50 text-brand-700 rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-brand-100 transition-all flex items-center justify-center gap-2 border border-brand-200"
+              >
+                <ExternalLink size={14} />
+                Consult Qwen AI (External)
+              </a>
+              <p className="text-[10px] text-zinc-400 text-center mt-2 italic">Qwen AI এর মাধ্যমে আরও বিস্তারিত পরামর্শ পেতে পারেন।</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-8">
+          {result ? (
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="neo-card p-10 rounded-[2.5rem] bg-zinc-900 text-white space-y-10"
+            >
+              <div className="flex justify-between items-start">
+                <div>
+                  <h4 className="text-zinc-400 font-bold uppercase tracking-widest text-[10px] mb-2">Detailed Calculation</h4>
+                  <p className="text-3xl font-black tracking-tighter">Tax Summary</p>
+                </div>
+                <div className="px-4 py-2 bg-brand-500/20 text-brand-400 rounded-full text-[10px] font-black uppercase tracking-widest">
+                  FY 2025-26
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-6">
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="p-6 bg-white/5 rounded-3xl border border-white/10">
+                    <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1">Taxable Income</p>
+                    <p className="text-xl font-bold">৳{result.totalTaxableIncome.toLocaleString()}</p>
+                  </div>
+                  <div className="p-6 bg-white/5 rounded-3xl border border-white/10">
+                    <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1">Gross Tax</p>
+                    <p className="text-xl font-bold">৳{result.grossTax.toLocaleString()}</p>
+                  </div>
+                </div>
+
+                <div className="p-6 bg-white/5 rounded-3xl border border-white/10">
+                  <div className="flex justify-between items-center">
+                    <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Tax Rebate</p>
+                    <p className="text-xl font-bold text-emerald-400">৳{result.rebate.toLocaleString()}</p>
+                  </div>
+                </div>
+
+                <div className="p-6 bg-white/5 rounded-3xl border border-white/10">
+                  <div className="flex justify-between items-center mb-4">
+                    <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Net Tax (After Rebate)</p>
+                    <p className="text-2xl font-black">৳{result.netTax.toLocaleString()}</p>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Surcharge</p>
+                    <p className="text-xl font-bold text-amber-400">৳{result.surcharge.toLocaleString()}</p>
+                  </div>
+                </div>
+
+                <div className="p-8 bg-brand-500 rounded-[2rem] shadow-lg shadow-brand-500/20">
+                  <p className="text-[10px] font-black text-white/60 uppercase tracking-widest mb-1">Total Payable Tax</p>
+                  <p className="text-5xl font-black tracking-tighter">৳{result.totalPayable.toLocaleString()}</p>
+                </div>
+              </div>
+
+              <div className="pt-6 border-t border-white/10 space-y-4">
+                <p className="text-[10px] text-zinc-400 leading-relaxed italic">
+                  * এই হিসাবটি আয়কর আইন ২০২৩ এবং ২০২৫-২৬ এর পরিপত্র অনুযায়ী করা হয়েছে। চূড়ান্ত রিটার্ন দাখিলের আগে বিশেষজ্ঞের পরামর্শ নিন।
+                </p>
+              </div>
+            </motion.div>
+          ) : (
+            <div className="neo-card p-10 rounded-[2.5rem] h-full flex flex-col items-center justify-center text-center space-y-6 opacity-40">
+              <div className="w-24 h-24 bg-zinc-50 rounded-full flex items-center justify-center">
+                <Calculator size={48} className="text-zinc-300" />
+              </div>
+              <div className="space-y-2">
+                <h4 className="text-xl font-bold">Ready to Calculate</h4>
+                <p className="text-sm max-w-[250px] mx-auto">Enter your income, investment, and wealth details for a compliant tax calculation.</p>
+              </div>
+            </div>
+          )}
+
+          {aiAnalysis && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="neo-card p-8 rounded-[2.5rem] bg-brand-50 border border-brand-100 space-y-4"
+            >
+              <div className="flex items-center gap-2 text-brand-700">
+                <Sparkles size={20} />
+                <h4 className="font-bold uppercase tracking-wider text-xs">AI Tax Advisor Analysis</h4>
+              </div>
+              <div className="text-sm text-zinc-700 leading-relaxed whitespace-pre-wrap font-medium">
+                {aiAnalysis}
+              </div>
+              <div className="pt-4 border-t border-brand-200 flex items-center justify-between">
+                <span className="text-[10px] text-brand-600 font-bold uppercase">Powered by Gemini & Qwen Context</span>
+                <Bot size={16} className="text-brand-400" />
+              </div>
+            </motion.div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ZakatCalculator() {
+  const [assets, setAssets] = useState({
+    cash: '',
+    bank: '',
+    gold: '',
+    silver: '',
+    investments: '',
+    businessAssets: '',
+    receivables: '',
+    debts: ''
+  });
+  
+  const [prices, setPrices] = useState({
+    goldPerGram: '8500', // Approx BDT per gram
+    silverPerGram: '150'  // Approx BDT per gram
+  });
+
+  const [result, setResult] = useState<any>(null);
+
+  const calculateZakat = () => {
+    const cashVal = parseFloat(assets.cash) || 0;
+    const bankVal = parseFloat(assets.bank) || 0;
+    const goldVal = (parseFloat(assets.gold) || 0) * (parseFloat(prices.goldPerGram) || 0);
+    const silverVal = (parseFloat(assets.silver) || 0) * (parseFloat(prices.silverPerGram) || 0);
+    const investVal = parseFloat(assets.investments) || 0;
+    const businessVal = parseFloat(assets.businessAssets) || 0;
+    const receiveVal = parseFloat(assets.receivables) || 0;
+    const debtVal = parseFloat(assets.debts) || 0;
+
+    const totalWealth = cashVal + bankVal + goldVal + silverVal + investVal + businessVal + receiveVal;
+    const netWealth = totalWealth - debtVal;
+
+    // Nisab calculation
+    // 52.5 Tola Silver = 612.36 grams
+    const nisabSilver = 612.36 * (parseFloat(prices.silverPerGram) || 0);
+    
+    const isEligible = netWealth >= nisabSilver;
+    const zakatPayable = isEligible ? netWealth * 0.025 : 0;
+
+    setResult({
+      totalWealth,
+      netWealth,
+      nisabSilver,
+      isEligible,
+      zakatPayable
+    });
+  };
+
+  return (
+    <div className="max-w-6xl mx-auto space-y-12 pb-32">
+      <SectionGuide 
+        title="যাকাত ক্যালকুলেটর গাইড"
+        steps={[
+          "আপনার কাছে থাকা নগদ টাকা এবং ব্যাংকে জমানো টাকার পরিমাণ লিখুন।",
+          "স্বর্ণ ও রূপার ওজন (গ্রামে) প্রদান করুন। বর্তমান বাজার মূল্য অনুযায়ী নিসাব হিসাব করা হবে।",
+          "ব্যবসায়িক পণ্য এবং বিনিয়োগের বর্তমান বাজার মূল্য যোগ করুন।",
+          "আপনার যদি কোনো ঋণ থাকে তবে তা বাদ দিন।",
+          "সিস্টেম স্বয়ংক্রিয়ভাবে ২.৫% হারে আপনার প্রদেয় যাকাতের পরিমাণ হিসাব করবে।"
+        ]}
+      />
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+        <div className="space-y-8">
+          <div className="neo-card p-10 rounded-[2.5rem] space-y-8">
+            <h3 className="text-2xl font-bold">Wealth Details</h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Cash in Hand</label>
+                <input 
+                  type="number"
+                  value={assets.cash}
+                  onChange={(e) => setAssets({ ...assets, cash: e.target.value })}
+                  className="w-full px-4 py-4 bg-zinc-50 border border-zinc-100 rounded-2xl focus:ring-2 focus:ring-brand-500 outline-none font-medium"
+                  placeholder="0.00"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Cash in Bank</label>
+                <input 
+                  type="number"
+                  value={assets.bank}
+                  onChange={(e) => setAssets({ ...assets, bank: e.target.value })}
+                  className="w-full px-4 py-4 bg-zinc-50 border border-zinc-100 rounded-2xl focus:ring-2 focus:ring-brand-500 outline-none font-medium"
+                  placeholder="0.00"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Gold (Grams)</label>
+                <input 
+                  type="number"
+                  value={assets.gold}
+                  onChange={(e) => setAssets({ ...assets, gold: e.target.value })}
+                  className="w-full px-4 py-4 bg-zinc-50 border border-zinc-100 rounded-2xl focus:ring-2 focus:ring-brand-500 outline-none font-medium"
+                  placeholder="0.00"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Silver (Grams)</label>
+                <input 
+                  type="number"
+                  value={assets.silver}
+                  onChange={(e) => setAssets({ ...assets, silver: e.target.value })}
+                  className="w-full px-4 py-4 bg-zinc-50 border border-zinc-100 rounded-2xl focus:ring-2 focus:ring-brand-500 outline-none font-medium"
+                  placeholder="0.00"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Investments (Stocks/Bonds)</label>
+                <input 
+                  type="number"
+                  value={assets.investments}
+                  onChange={(e) => setAssets({ ...assets, investments: e.target.value })}
+                  className="w-full px-4 py-4 bg-zinc-50 border border-zinc-100 rounded-2xl focus:ring-2 focus:ring-brand-500 outline-none font-medium"
+                  placeholder="0.00"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Business Assets</label>
+                <input 
+                  type="number"
+                  value={assets.businessAssets}
+                  onChange={(e) => setAssets({ ...assets, businessAssets: e.target.value })}
+                  className="w-full px-4 py-4 bg-zinc-50 border border-zinc-100 rounded-2xl focus:ring-2 focus:ring-brand-500 outline-none font-medium"
+                  placeholder="0.00"
+                />
+              </div>
+            </div>
+
+            <div className="h-px bg-zinc-100" />
+
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-red-400 uppercase tracking-widest">Debts & Liabilities</label>
+                <input 
+                  type="number"
+                  value={assets.debts}
+                  onChange={(e) => setAssets({ ...assets, debts: e.target.value })}
+                  className="w-full px-4 py-4 bg-red-50/30 border border-red-100 rounded-2xl focus:ring-2 focus:ring-red-500 outline-none font-medium"
+                  placeholder="0.00"
+                />
+              </div>
+            </div>
+
+            <button 
+              onClick={calculateZakat}
+              className="w-full py-5 bg-zinc-900 text-white rounded-2xl font-bold text-sm uppercase tracking-widest hover:bg-black transition-all"
+            >
+              Calculate Zakat
+            </button>
+          </div>
+
+          <div className="neo-card p-10 rounded-[2.5rem] space-y-6">
+            <h3 className="text-xl font-bold">Market Rates (BDT)</h3>
+            <div className="grid grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Gold Price / Gram</label>
+                <input 
+                  type="number"
+                  value={prices.goldPerGram}
+                  onChange={(e) => setPrices({ ...prices, goldPerGram: e.target.value })}
+                  className="w-full px-4 py-3 bg-zinc-50 border border-zinc-100 rounded-xl text-sm"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Silver Price / Gram</label>
+                <input 
+                  type="number"
+                  value={prices.silverPerGram}
+                  onChange={(e) => setPrices({ ...prices, silverPerGram: e.target.value })}
+                  className="w-full px-4 py-3 bg-zinc-50 border border-zinc-100 rounded-xl text-sm"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-8">
+          {result ? (
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="neo-card p-10 rounded-[2.5rem] bg-zinc-900 text-white space-y-10"
+            >
+              <div className="flex justify-between items-start">
+                <div>
+                  <h4 className="text-zinc-400 font-bold uppercase tracking-widest text-[10px] mb-2">Calculation Result</h4>
+                  <p className="text-3xl font-black tracking-tighter">
+                    {result.isEligible ? 'Eligible for Zakat' : 'Below Nisab Threshold'}
+                  </p>
+                </div>
+                <div className={cn(
+                  "px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest",
+                  result.isEligible ? "bg-emerald-500/20 text-emerald-400" : "bg-red-500/20 text-red-400"
+                )}>
+                  {result.isEligible ? 'Must Pay' : 'Not Required'}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-6">
+                <div className="p-6 bg-white/5 rounded-3xl border border-white/10">
+                  <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1">Net Wealth</p>
+                  <p className="text-4xl font-black tracking-tighter">৳{result.netWealth.toLocaleString()}</p>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="p-6 bg-white/5 rounded-3xl border border-white/10">
+                    <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1">Nisab (Silver)</p>
+                    <p className="text-xl font-bold">৳{Math.round(result.nisabSilver).toLocaleString()}</p>
+                  </div>
+                  <div className="p-6 bg-brand-500 rounded-3xl">
+                    <p className="text-[10px] font-black text-white/60 uppercase tracking-widest mb-1">Zakat Payable</p>
+                    <p className="text-2xl font-black">৳{result.zakatPayable.toLocaleString()}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-6 border-t border-white/10 space-y-4">
+                <p className="text-xs text-zinc-400 leading-relaxed italic">
+                  * Zakat is calculated at 2.5% of your net wealth if it exceeds the Nisab threshold. The Nisab is calculated based on the current market price of 52.5 Tola (612.36g) of Silver.
+                </p>
+              </div>
+            </motion.div>
+          ) : (
+            <div className="neo-card p-10 rounded-[2.5rem] h-full flex flex-col items-center justify-center text-center space-y-6 opacity-40">
+              <div className="w-24 h-24 bg-zinc-50 rounded-full flex items-center justify-center">
+                <Coins size={48} className="text-zinc-300" />
+              </div>
+              <div className="space-y-2">
+                <h4 className="text-xl font-bold">Ready to Calculate</h4>
+                <p className="text-sm max-w-[250px] mx-auto">Enter your assets and liabilities to see your Zakat eligibility and amount.</p>
+              </div>
+            </div>
+          )}
+
+          <div className="neo-card p-10 rounded-[2.5rem] space-y-6">
+            <h4 className="text-lg font-bold">Important Notes</h4>
+            <ul className="space-y-4">
+              {[
+                "যাকাত ফরজ হওয়ার জন্য সম্পদ নিসাব পরিমাণ হতে হবে এবং তা এক বছর স্থায়ী হতে হবে।",
+                "ব্যক্তিগত ব্যবহারের অলঙ্কার (স্বর্ণ/রূপা) যাকাতের অন্তর্ভুক্ত হবে যদি তা নিসাব স্পর্শ করে।",
+                "ব্যবসায়িক পণ্যের বর্তমান বাজার মূল্যের ওপর যাকাত হিসাব করতে হবে।",
+                "ঋণ থাকলে তা মোট সম্পদ থেকে বাদ দিয়ে নিসাব হিসাব করতে হবে।"
+              ].map((note, i) => (
+                <li key={i} className="flex gap-3 text-sm text-zinc-600">
+                  <div className="w-1.5 h-1.5 rounded-full bg-brand-500 mt-1.5 shrink-0" />
+                  {note}
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
       </div>
     </div>

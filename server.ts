@@ -148,6 +148,21 @@ db.exec(`
     metadataUrl TEXT
   );
 
+  CREATE TABLE IF NOT EXISTS mushak91_submissions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    taxpayerName TEXT,
+    bin TEXT,
+    address TEXT,
+    taxPeriod TEXT,
+    returnType TEXT,
+    outputVatTotal REAL DEFAULT 0,
+    inputTaxCreditTotal REAL DEFAULT 0,
+    vdsTotal REAL DEFAULT 0,
+    netPayable REAL DEFAULT 0,
+    formData TEXT,
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
   -- Initial Partners
   INSERT INTO investment_partners (name, url, description)
   SELECT 'MetLife (Alico)', 'https://www.metlife.com.bd/', 'Life Insurance & Savings'
@@ -641,6 +656,53 @@ async function startServer() {
     const stmt = db.prepare("INSERT INTO tokenized_certificates (tokenId, ownerAddress, certType) VALUES (?, ?, ?)");
     stmt.run(tokenId, ownerAddress, certType);
     res.json({ success: true, tokenId, ownerAddress, certType });
+  });
+
+  app.patch("/api/blockchain/certificates/:id", (req, res) => {
+    const { id } = req.params;
+    const { status } = req.body;
+    db.prepare("UPDATE tokenized_certificates SET status = ? WHERE id = ?").run(status, id);
+    res.json({ success: true });
+  });
+
+  // Mushak-9.1 Routes
+  app.post("/api/mushak91", (req, res) => {
+    const { 
+      taxpayerName, bin, address, taxPeriod, returnType, 
+      outputVatTotal, inputTaxCreditTotal, vdsTotal, netPayable, 
+      formData 
+    } = req.body;
+    
+    const stmt = db.prepare(`
+      INSERT INTO mushak91_submissions (
+        taxpayerName, bin, address, taxPeriod, returnType, 
+        outputVatTotal, inputTaxCreditTotal, vdsTotal, netPayable, 
+        formData
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    
+    const result = stmt.run(
+      taxpayerName, bin, address, taxPeriod, returnType, 
+      outputVatTotal, inputTaxCreditTotal, vdsTotal, netPayable, 
+      JSON.stringify(formData)
+    );
+    
+    res.json({ success: true, id: result.lastInsertRowid });
+  });
+
+  app.get("/api/mushak91", (req, res) => {
+    const submissions = db.prepare("SELECT * FROM mushak91_submissions ORDER BY createdAt DESC").all();
+    res.json(submissions.map(s => ({ ...s, formData: JSON.parse(s.formData) })));
+  });
+
+  app.get("/api/mushak91/:id", (req, res) => {
+    const { id } = req.params;
+    const submission = db.prepare("SELECT * FROM mushak91_submissions WHERE id = ?").get(id);
+    if (submission) {
+      res.json({ ...submission, formData: JSON.parse(submission.formData) });
+    } else {
+      res.status(404).json({ error: "Submission not found" });
+    }
   });
 
   // Run immediately on start and then every 2 hours

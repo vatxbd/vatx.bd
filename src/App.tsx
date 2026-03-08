@@ -20,6 +20,7 @@ import {
   ArrowRight,
   ArrowRightLeft,
   ShieldCheck,
+  ShieldAlert,
   Ship,
   Search,
   Shield,
@@ -59,10 +60,12 @@ import {
   File,
   Loader2,
   Lock,
-  Menu
+  Menu,
+  Languages
 } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import { motion, AnimatePresence } from 'motion/react';
+import { translations, Language } from './translations';
 import { 
   BarChart, 
   Bar, 
@@ -77,6 +80,7 @@ import {
   AreaChart,
   Area
 } from 'recharts';
+import Mushak91Form from './components/Mushak91Form';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -115,7 +119,7 @@ function Toggle({ label, checked, onChange, description, compact }: {
   );
 }
 
-function SectionGuide({ title, steps }: { title: string, steps: string[] }) {
+function SectionGuide({ title, steps, language = 'bn' }: { title: string, steps: string[], language?: Language }) {
   const [isOpen, setIsOpen] = useState(false);
   return (
     <div className="mb-8">
@@ -123,7 +127,7 @@ function SectionGuide({ title, steps }: { title: string, steps: string[] }) {
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 text-xs font-black text-brand-600 uppercase tracking-widest hover:text-brand-700 transition-all"
       >
-        <Bot size={16} /> {isOpen ? 'গাইড বন্ধ করুন' : 'কিভাবে ব্যবহার করবেন? (গাইড)'}
+        <Bot size={16} /> {isOpen ? (language === 'bn' ? 'গাইড বন্ধ করুন' : 'Close Guide') : (language === 'bn' ? 'কিভাবে ব্যবহার করবেন? (গাইড)' : 'How to use? (Guide)')}
       </button>
       <AnimatePresence>
         {isOpen && (
@@ -155,7 +159,7 @@ function SectionGuide({ title, steps }: { title: string, steps: string[] }) {
   );
 }
 
-type Tab = 'dashboard' | 'vat' | 'tax' | 'tariff' | 'manifest' | 'reports' | 'blog' | 'tools' | 'ai' | 'invoice' | 'history' | 'notices' | 'rebate' | 'hscode' | 'subscription' | 'crypto-tax' | 'blockchain-verify' | 'tokenized-cert' | 'tax-advisory' | 'zakat' | 'final-tax' | 'developer' | 'documents';
+type Tab = 'dashboard' | 'vat' | 'tax' | 'tariff' | 'manifest' | 'reports' | 'blog' | 'tools' | 'ai' | 'invoice' | 'history' | 'notices' | 'rebate' | 'hscode' | 'subscription' | 'crypto-tax' | 'blockchain-verify' | 'tokenized-cert' | 'tax-advisory' | 'zakat' | 'final-tax' | 'developer' | 'documents' | 'critical-vat';
 
 interface TaxNotice {
   id: number;
@@ -167,6 +171,8 @@ interface TaxNotice {
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
+  const [language, setLanguage] = useState<Language>('en');
+  const t = translations[language];
   const [vatHistory, setVatHistory] = useState<any[]>([]);
   const [taxHistory, setTaxHistory] = useState<any[]>([]);
   const [notices, setNotices] = useState<TaxNotice[]>([]);
@@ -393,7 +399,7 @@ export default function App() {
           </div>
           <div className="flex flex-col">
             <span className="text-xl font-bold tracking-tight font-display">VATX.BD</span>
-            <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em]">Compliance</span>
+            <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em]">{t.compliance}</span>
           </div>
         </div>
 
@@ -413,25 +419,25 @@ export default function App() {
             <p className="px-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-4">Main Menu</p>
             <NavItem 
               icon={<BarChart3 size={18} />} 
-              label="Dashboard" 
+              label={t.dashboard} 
               active={activeTab === 'dashboard'} 
               onClick={() => setActiveTab('dashboard')} 
             />
             <NavItem 
               icon={<FileSearch size={18} />} 
-              label="Document Centre" 
+              label={t.documents} 
               active={activeTab === 'documents'} 
               onClick={() => setActiveTab('documents')} 
             />
             <NavItem 
               icon={<Receipt size={18} />} 
-              label="VAT Calculator" 
+              label={t.vat} 
               active={activeTab === 'vat'} 
               onClick={() => setActiveTab('vat')} 
             />
             <NavItem 
               icon={<Calculator size={18} />} 
-              label="Tax Calculator" 
+              label={t.tax} 
               active={activeTab === 'tax'} 
               onClick={() => setActiveTab('tax')} 
             />
@@ -447,97 +453,103 @@ export default function App() {
             <p className="px-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-4">Business Tools</p>
             <NavItem 
               icon={<Ship size={18} />} 
-              label="Tariff Calculator" 
+              label={t.tariff} 
               active={activeTab === 'tariff'} 
               onClick={() => setActiveTab('tariff')} 
             />
             <NavItem 
               icon={<ClipboardCheck size={18} />} 
-              label="Manifest & Cargo" 
+              label={t.manifest} 
               active={activeTab === 'manifest'} 
               onClick={() => setActiveTab('manifest')} 
             />
             <NavItem 
               icon={<Receipt size={18} />} 
-              label="Invoice Generator" 
+              label={t.invoice} 
               active={activeTab === 'invoice'} 
               onClick={() => setActiveTab('invoice')} 
             />
           </div>
 
           <div className="py-4 border-t border-zinc-50">
-            <p className="px-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-4">Intelligence</p>
+            <p className="px-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-4">{t.intelligence}</p>
             <NavItem 
               icon={<Sparkles size={18} />} 
-              label="AI Tax Advisor" 
+              label={t.ai} 
               active={activeTab === 'ai'} 
               onClick={() => setActiveTab('ai')} 
             />
             <NavItem 
               icon={<TrendingUp size={18} />} 
-              label="Tax Rebate Planner" 
+              label={t.rebate} 
               active={activeTab === 'rebate'} 
               onClick={() => setActiveTab('rebate')} 
             />
             <NavItem 
               icon={<Search size={18} />} 
-              label="HS Code Finder" 
+              label={t.hscode} 
               active={activeTab === 'hscode'} 
               onClick={() => setActiveTab('hscode')} 
             />
             <NavItem 
               icon={<Sparkles size={18} />} 
-              label="Tax Advisory" 
+              label={t.advisory} 
               active={activeTab === 'tax-advisory'} 
               onClick={() => setActiveTab('tax-advisory')} 
             />
             <NavItem 
               icon={<Coins size={18} />} 
-              label="Zakat Calculator" 
+              label={t.zakat} 
               active={activeTab === 'zakat'} 
               onClick={() => setActiveTab('zakat')} 
+            />
+            <NavItem 
+              icon={<Calculator size={18} />} 
+              label={t.criticalVat} 
+              active={activeTab === 'critical-vat'} 
+              onClick={() => setActiveTab('critical-vat')} 
             />
           </div>
 
           <div className="py-4 border-t border-zinc-50">
-            <p className="px-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-4">Resources</p>
+            <p className="px-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-4">{t.resources}</p>
             <NavItem 
               icon={<FileText size={18} />} 
-              label="Tax Blog" 
+              label={t.blog} 
               active={activeTab === 'blog'} 
               onClick={() => setActiveTab('blog')} 
             />
             <NavItem 
               icon={<Bell size={18} />} 
-              label="Tax Notices" 
+              label={t.notices} 
               active={activeTab === 'notices'} 
               onClick={() => setActiveTab('notices')} 
             />
             <NavItem 
               icon={<History size={18} />} 
-              label="History" 
+              label={t.history} 
               active={activeTab === 'history'} 
               onClick={() => setActiveTab('history')} 
             />
           </div>
 
           <div className="py-4 border-t border-zinc-50">
-            <p className="px-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-4">Web3 & Blockchain</p>
+            <p className="px-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-4">{t.web3}</p>
             <NavItem 
               icon={<Coins size={18} />} 
-              label="Crypto Tax Advisory" 
+              label={t.crypto} 
               active={activeTab === 'crypto-tax'} 
               onClick={() => setActiveTab('crypto-tax')} 
             />
             <NavItem 
               icon={<Fingerprint size={18} />} 
-              label="Blockchain Verify" 
+              label={t.blockchain} 
               active={activeTab === 'blockchain-verify'} 
               onClick={() => setActiveTab('blockchain-verify')} 
             />
             <NavItem 
               icon={<Ticket size={18} />} 
-              label="Compliance NFTs" 
+              label={t.tokens} 
               active={activeTab === 'tokenized-cert'} 
               onClick={() => setActiveTab('tokenized-cert')} 
             />
@@ -557,8 +569,8 @@ export default function App() {
               <div className="px-2 py-0.5 bg-brand-500 text-white text-[8px] font-black uppercase tracking-tighter rounded-full">Pro</div>
             </div>
             <div className="text-left">
-              <p className="text-xs font-bold">Manage Plan</p>
-              <p className={cn("text-[10px]", activeTab === 'subscription' ? "text-zinc-400" : "text-zinc-500")}>Upgrade for AI features</p>
+              <p className="text-xs font-bold">{t.managePlan}</p>
+              <p className={cn("text-[10px]", activeTab === 'subscription' ? "text-zinc-400" : "text-zinc-500")}>{t.upgrade}</p>
             </div>
           </button>
         </div>
@@ -569,11 +581,11 @@ export default function App() {
         <header className="flex flex-col lg:flex-row justify-between lg:items-center gap-6 mb-12 hidden md:flex">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <div className="px-2 py-0.5 bg-brand-500 text-white text-[8px] font-black uppercase tracking-widest rounded-md">Live</div>
-              <span className="text-[10px] font-black text-brand-600 uppercase tracking-[0.3em]">Smart Compliance</span>
+              <div className="px-2 py-0.5 bg-brand-500 text-white text-[8px] font-black uppercase tracking-widest rounded-md">{t.live}</div>
+              <span className="text-[10px] font-black text-brand-600 uppercase tracking-[0.3em]">{t.compliance}</span>
             </div>
             <h1 className="text-4xl md:text-5xl font-black tracking-tighter font-display capitalize bg-gradient-to-r from-zinc-900 to-zinc-500 bg-clip-text text-transparent">
-              {activeTab.replace('-', ' ')}
+              {t[activeTab as keyof typeof t] || activeTab.replace('-', ' ')}
             </h1>
           </div>
           
@@ -582,7 +594,7 @@ export default function App() {
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 group-focus-within:text-brand-500 transition-colors" size={18} />
               <input 
                 type="text"
-                placeholder="Search anything..."
+                placeholder={t.search}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onFocus={() => searchQuery.trim() && setShowSearchResults(true)}
@@ -705,6 +717,15 @@ export default function App() {
                 )}
               </AnimatePresence>
             </div>
+            <div className="relative">
+              <button 
+                onClick={() => setLanguage(language === 'en' ? 'bn' : 'en')}
+                className="flex items-center gap-2 px-3 py-2 text-xs font-black text-zinc-600 hover:bg-white hover:shadow-sm rounded-lg transition-all border border-zinc-100"
+              >
+                <Languages size={16} className="text-brand-500" />
+                <span>{language === 'en' ? 'বাংলা' : 'English'}</span>
+              </button>
+            </div>
             <button className="p-2 text-[#6B7280] hover:bg-white hover:shadow-sm rounded-lg transition-all">
               <Settings size={20} />
             </button>
@@ -722,7 +743,7 @@ export default function App() {
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2 }}
           >
-            {activeTab === 'dashboard' && <Dashboard vatHistory={vatHistory} taxHistory={taxHistory} />}
+            {activeTab === 'dashboard' && <Dashboard vatHistory={vatHistory} taxHistory={taxHistory} t={t} notices={notices} language={language} />}
             {activeTab === 'vat' && <VATCalculator onComplete={fetchHistory} />}
             {activeTab === 'tax' && <TaxCalculator onComplete={fetchHistory} />}
             {activeTab === 'tariff' && <TariffCalculator />}
@@ -743,8 +764,9 @@ export default function App() {
             {activeTab === 'tax-advisory' && <IncomeTaxAdvisory />}
             {activeTab === 'final-tax' && <FinalTaxCalculator />}
             {activeTab === 'zakat' && <ZakatCalculator />}
+            {activeTab === 'critical-vat' && <Mushak91Form />}
             {activeTab === 'developer' && isDeveloper && <DeveloperPanel notices={notices} setNotices={setNotices} />}
-            {activeTab === 'documents' && <DocumentCentre />}
+            {activeTab === 'documents' && <DocumentCentre language={language} />}
           </motion.div>
         </AnimatePresence>
       </main>
@@ -788,7 +810,7 @@ function NavItem({ icon, label, active, onClick }: { icon: React.ReactNode, labe
   );
 }
 
-function DocumentCentre() {
+function DocumentCentre({ language }: { language: Language }) {
   const [files, setFiles] = useState<{ 
     file: File; 
     ocrResult?: string; 
@@ -845,15 +867,19 @@ function DocumentCentre() {
           {
             text: `Extract structured data from this document for Bangladesh Tax (NBR) filing. 
             Focus on: 
-            1. Document Type (Invoice, Mushak 6.3, Salary Certificate, Bank Statement)
+            1. Document Type (Invoice, Mushak 6.3, Salary Certificate, Bank Statement, Tax Certificate)
             2. TIN/BIN numbers
             3. Total Amount (BDT)
             4. Tax/VAT Amount
             5. Date of Issue
             6. Vendor/Company Name
             7. Address
+            8. Taxpayer Name
+            9. Assessment Year
+            10. Income Components (Salary, House Rent, Business)
+            11. Investment Amount (for rebate)
             
-            Return the data in a clean JSON format suitable for form automation.`
+            Return the data in a clean JSON format suitable for individual tax return (IT-11GA) form automation.`
           }
         ],
         config: {
@@ -862,18 +888,23 @@ function DocumentCentre() {
             type: "object",
             properties: {
               documentType: { type: "string" },
+              taxpayerName: { type: "string" },
               vendorName: { type: "string" },
               tin: { type: "string" },
               bin: { type: "string" },
               date: { type: "string" },
+              assessmentYear: { type: "string" },
               totalAmount: { type: "number" },
               taxAmount: { type: "number" },
-              vatAmount: { type: "number" },
+              salaryIncome: { type: "number" },
+              housePropertyIncome: { type: "number" },
+              businessIncome: { type: "number" },
+              investmentAmount: { type: "number" },
               currency: { type: "string" },
               summary: { type: "string" },
               confidence: { type: "number" }
             },
-            required: ["documentType", "totalAmount"]
+            required: ["documentType"]
           }
         }
       });
@@ -899,30 +930,62 @@ function DocumentCentre() {
   const generateNBRScript = (data: any) => {
     if (!data) return "";
     return `
-// NBR TRMS Auto-Fill Script
-// Copy and paste this into the browser console at https://trms.nbr.gov.bd/dashboard
+/**
+ * VATX.BD - NBR TRMS Individual Tax Auto-Fill
+ * Target: https://trms.nbr.gov.bd/dashboard
+ * 
+ * This script automates the entry of data extracted from your documents
+ * into the NBR Individual Tax Filing portal.
+ */
 (function() {
   const data = ${JSON.stringify(data, null, 2)};
-  console.log("Starting Auto-Fill for:", data.documentType);
+  console.log("%c VATX.BD Automation Active ", "background: #10b981; color: white; font-weight: bold; padding: 4px; border-radius: 4px;");
+  console.log("Processing Document Type:", data.documentType);
   
-  // Helper to find and fill inputs
-  const fill = (selector, value) => {
-    const el = document.querySelector(selector);
-    if (el) {
-      el.value = value;
-      el.dispatchEvent(new Event('input', { bubbles: true }));
-      el.dispatchEvent(new Event('change', { bubbles: true }));
-      console.log("Filled " + selector + " with " + value);
-    }
+  const selectors = {
+    tin: ['input[name="tin"]', '#tin', '.tin-input'],
+    name: ['input[name="name"]', '#taxpayer_name', '.name-input'],
+    assessmentYear: ['select[name="assessment_year"]', 'input[name="assessment_year"]'],
+    salary: ['input[name="salary_income"]', 'input[name="income_salary"]', '#salary'],
+    houseProperty: ['input[name="house_property_income"]', '#house_property'],
+    business: ['input[name="business_income"]', '#business_income'],
+    investment: ['input[name="investment_rebate"]', '#investment'],
+    taxPaid: ['input[name="tax_paid"]', '#tax_paid'],
+    amount: ['input[name="amount"]', 'input[name="total_amount"]', '#amount']
   };
 
-  // Example mappings (adjust based on actual NBR portal selectors)
-  if (data.totalAmount) fill('input[name="amount"]', data.totalAmount);
-  if (data.tin) fill('input[name="tin"]', data.tin);
-  if (data.date) fill('input[name="date"]', data.date);
-  if (data.vendorName) fill('input[name="vendor"]', data.vendorName);
+  const fill = (key, value) => {
+    if (!value) return;
+    const possibleSelectors = selectors[key] || [];
+    let found = false;
+    
+    for (const selector of possibleSelectors) {
+      const el = document.querySelector(selector);
+      if (el) {
+        el.value = value;
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+        console.log("%c Filled " + key + " -> " + value, "color: #10b981");
+        found = true;
+        break;
+      }
+    }
+    if (!found) console.warn("Could not find input for: " + key);
+  };
+
+  // Execute Auto-Fill
+  fill('tin', data.tin);
+  fill('name', data.taxpayerName);
+  fill('assessmentYear', data.assessmentYear);
+  fill('salary', data.salaryIncome);
+  fill('houseProperty', data.housePropertyIncome);
+  fill('business', data.businessIncome);
+  fill('investment', data.investmentAmount);
+  fill('taxPaid', data.taxAmount);
+  fill('amount', data.totalAmount);
   
-  alert("Data from VATX.BD has been prepared for the NBR Portal!");
+  console.log("%c Auto-Fill Complete! Please verify all fields before submitting. ", "font-weight: bold; color: #10b981;");
+  alert("VATX.BD: Data for " + data.documentType + " has been auto-filled. Please verify before submission.");
 })();
     `.trim();
   };
@@ -932,6 +995,7 @@ function DocumentCentre() {
   return (
     <div className="space-y-8">
       <SectionGuide 
+        language={language}
         title="স্মার্ট ওসিআর ও এনবিআর (NBR) অটোমেশন গাইড"
         steps={[
           "আপনার ডকুমেন্ট আপলোড করুন (Invoice, Mushak 6.3, Salary Certificate)।",
@@ -1032,11 +1096,15 @@ function DocumentCentre() {
                 <div className="space-y-8">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <DataPoint label="Document Type" value={activeFile.structuredData.documentType} icon={<FileText size={16} />} />
-                    <DataPoint label="Vendor Name" value={activeFile.structuredData.vendorName} icon={<Building2 size={16} />} />
+                    <DataPoint label="Taxpayer Name" value={activeFile.structuredData.taxpayerName} icon={<User size={16} />} />
                     <DataPoint label="TIN Number" value={activeFile.structuredData.tin} icon={<Fingerprint size={16} />} />
-                    <DataPoint label="BIN Number" value={activeFile.structuredData.bin} icon={<ShieldCheck size={16} />} />
-                    <DataPoint label="Date" value={activeFile.structuredData.date} icon={<History size={16} />} />
-                    <DataPoint label="Total Amount" value={`৳${activeFile.structuredData.totalAmount?.toLocaleString()}`} icon={<Coins size={16} />} />
+                    <DataPoint label="Assessment Year" value={activeFile.structuredData.assessmentYear} icon={<History size={16} />} />
+                    
+                    <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-zinc-100">
+                      <DataPoint label="Salary Income" value={activeFile.structuredData.salaryIncome ? `৳${activeFile.structuredData.salaryIncome.toLocaleString()}` : undefined} icon={<Coins size={16} />} />
+                      <DataPoint label="Investment" value={activeFile.structuredData.investmentAmount ? `৳${activeFile.structuredData.investmentAmount.toLocaleString()}` : undefined} icon={<TrendingUp size={16} />} />
+                      <DataPoint label="Tax Paid" value={activeFile.structuredData.taxAmount ? `৳${activeFile.structuredData.taxAmount.toLocaleString()}` : undefined} icon={<ShieldCheck size={16} />} />
+                    </div>
                   </div>
 
                   <div className="p-6 bg-brand-50 rounded-3xl border border-brand-100">
@@ -1150,6 +1218,38 @@ function DeveloperPanel({ notices, setNotices }: { notices: TaxNotice[], setNoti
   }
 
   const [newNotice, setNewNotice] = useState({ title: '', link: '', category: 'General' });
+  const [certs, setCerts] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (isAuthorized) {
+      fetchCerts();
+    }
+  }, [isAuthorized]);
+
+  const fetchCerts = async () => {
+    try {
+      const res = await fetch('/api/blockchain/certificates');
+      const data = await res.json();
+      setCerts(data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const updateCertStatus = async (id: number, status: string) => {
+    try {
+      const res = await fetch(`/api/blockchain/certificates/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status })
+      });
+      if (res.ok) {
+        fetchCerts();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const addNotice = () => {
     if (newNotice.title && newNotice.link) {
@@ -1283,12 +1383,76 @@ function DeveloperPanel({ notices, setNotices }: { notices: TaxNotice[], setNoti
             </div>
           </div>
         </div>
+
+        <div className="mt-12 pt-12 border-t border-zinc-100">
+          <h4 className="text-lg font-black font-display flex items-center gap-2 mb-8">
+            <Cpu size={20} className="text-brand-500" />
+            Tokenized Certificates Management
+          </h4>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-separate border-spacing-y-3">
+              <thead>
+                <tr className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+                  <th className="px-6 pb-2">Token ID</th>
+                  <th className="px-6 pb-2">Owner Address</th>
+                  <th className="px-6 pb-2">Type</th>
+                  <th className="px-6 pb-2">Issue Date</th>
+                  <th className="px-6 pb-2">Status</th>
+                  <th className="px-6 pb-2 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {certs.map(cert => (
+                  <tr key={cert.id} className="bg-zinc-50 hover:bg-zinc-100 transition-all group">
+                    <td className="px-6 py-4 rounded-l-2xl border-y border-l border-zinc-100">
+                      <span className="font-mono text-xs font-black text-zinc-900">{cert.tokenId}</span>
+                    </td>
+                    <td className="px-6 py-4 border-y border-zinc-100">
+                      <span className="font-mono text-[10px] text-zinc-500">{cert.ownerAddress}</span>
+                    </td>
+                    <td className="px-6 py-4 border-y border-zinc-100">
+                      <span className="px-2 py-1 bg-zinc-200 text-zinc-600 text-[8px] font-black uppercase tracking-widest rounded">{cert.certType}</span>
+                    </td>
+                    <td className="px-6 py-4 border-y border-zinc-100">
+                      <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">{new Date(cert.issueDate).toLocaleDateString()}</span>
+                    </td>
+                    <td className="px-6 py-4 border-y border-zinc-100">
+                      <span className={`px-2 py-1 rounded text-[8px] font-black uppercase tracking-widest ${
+                        cert.status === 'active' ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'
+                      }`}>
+                        {cert.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 rounded-r-2xl border-y border-r border-zinc-100 text-right">
+                      <button 
+                        onClick={() => updateCertStatus(cert.id, cert.status === 'active' ? 'revoked' : 'active')}
+                        className={`p-2 rounded-xl transition-all ${
+                          cert.status === 'active' ? 'text-red-500 hover:bg-red-50' : 'text-emerald-500 hover:bg-emerald-50'
+                        }`}
+                        title={cert.status === 'active' ? 'Revoke Certificate' : 'Reactivate Certificate'}
+                      >
+                        {cert.status === 'active' ? <ShieldAlert size={18} /> : <ShieldCheck size={18} />}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+                {certs.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-12 text-center text-zinc-400 italic text-sm bg-zinc-50 rounded-2xl border border-zinc-100">
+                      No tokenized certificates issued yet.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
   );
 }
 
-function Dashboard({ vatHistory, taxHistory }: { vatHistory: any[], taxHistory: any[] }) {
+function Dashboard({ vatHistory, taxHistory, t, notices, language }: { vatHistory: any[], taxHistory: any[], t: any, notices: any[], language: Language }) {
   const totalVat = vatHistory.reduce((sum, r) => sum + r.vatAmount, 0);
   const totalTax = taxHistory.reduce((sum, r) => sum + r.totalTaxLiability, 0);
 
@@ -1327,27 +1491,27 @@ function Dashboard({ vatHistory, taxHistory }: { vatHistory: any[], taxHistory: 
               transition={{ delay: 0.2 }}
               className="inline-flex items-center gap-2 px-4 py-1.5 bg-brand-500/20 text-brand-400 rounded-full text-[10px] font-black uppercase tracking-widest border border-brand-500/20"
             >
-              <ShieldCheck size={12} /> Verified Compliance
+              <ShieldCheck size={12} /> {t.verifiedCompliance}
             </motion.div>
             <h2 className="text-4xl md:text-6xl font-black font-display tracking-tight leading-[0.9]">
-              Welcome back, <br />
+              {t.welcome}, <br />
               <span className="text-brand-400">Taxpayer</span>
             </h2>
             <p className="text-zinc-400 text-sm md:text-lg max-w-md leading-relaxed font-medium">
-              Your compliance score is <span className="text-white font-black">98%</span>. You have <span className="text-white font-black underline decoration-brand-500 underline-offset-4">3 pending notices</span> to review.
+              {t.complianceScore} <span className="text-white font-black">98%</span>. {language === 'bn' ? `আপনার ${notices.length} ${t.pendingNotices} ${t.toReview}` : `You have ${notices.length} ${t.pendingNotices} ${t.toReview}`}.
             </p>
             <div className="flex flex-wrap justify-center md:justify-start gap-4 pt-4">
               <button 
                 onClick={() => window.dispatchEvent(new CustomEvent('changeTab', { detail: 'vat' }))} 
                 className="px-8 py-4 bg-brand-500 hover:bg-brand-600 text-white rounded-2xl font-black text-sm transition-all shadow-xl shadow-brand-500/30 active:scale-95"
               >
-                New VAT Entry
+                {t.newVat}
               </button>
               <button 
                 onClick={() => window.dispatchEvent(new CustomEvent('changeTab', { detail: 'notices' }))} 
                 className="px-8 py-4 bg-white/10 hover:bg-white/20 text-white rounded-2xl font-black text-sm transition-all backdrop-blur-md border border-white/10 active:scale-95"
               >
-                View Notices
+                {t.viewNotices}
               </button>
             </div>
           </div>
@@ -1387,29 +1551,29 @@ function Dashboard({ vatHistory, taxHistory }: { vatHistory: any[], taxHistory: 
       <motion.div variants={containerVariants} className="grid grid-cols-1 md:grid-cols-3 gap-8">
         <StatCard 
           icon={<Receipt size={28} />} 
-          label="VAT Liability" 
+          label={t.vatLiability} 
           value={`৳${totalVat.toLocaleString()}`} 
           trend="+12.5%" 
           color="bg-brand-500" 
-          description="Total calculated VAT for current period"
+          description={t.vatLiabilityDesc}
           delay={0.1}
         />
         <StatCard 
           icon={<Calculator size={28} />} 
-          label="Income Tax" 
+          label={t.incomeTaxLabel} 
           value={`৳${totalTax.toLocaleString()}`} 
           trend="+5.2%" 
           color="bg-zinc-900" 
-          description="Estimated income tax for FY 2024-25"
+          description={t.incomeTaxDesc}
           delay={0.2}
         />
         <StatCard 
           icon={<TrendingUp size={28} />} 
-          label="Compliance" 
+          label={t.complianceScoreLabel} 
           value="98%" 
           trend="Perfect" 
           color="bg-emerald-600" 
-          description="Your overall tax compliance health score"
+          description={t.complianceDesc}
           delay={0.3}
         />
       </motion.div>
@@ -1421,17 +1585,17 @@ function Dashboard({ vatHistory, taxHistory }: { vatHistory: any[], taxHistory: 
               <div className="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center text-brand-600">
                 <BarChart3 size={24} />
               </div>
-              Liability Distribution
+              {t.liabilityDistribution}
             </h3>
-            <div className="px-4 py-1.5 bg-zinc-50 text-zinc-500 text-[10px] font-black uppercase tracking-widest rounded-full border border-zinc-100">Real-time</div>
+            <div className="px-4 py-1.5 bg-zinc-50 text-zinc-500 text-[10px] font-black uppercase tracking-widest rounded-full border border-zinc-100">{t.realTime}</div>
           </div>
           <div className="h-[350px]">
             <ResponsiveContainer width="100%" height="100%">
               <RePieChart>
                 <Pie
                   data={[
-                    { name: 'VAT', value: totalVat || 1 },
-                    { name: 'Income Tax', value: totalTax || 1 },
+                    { name: t.vat, value: totalVat || 1 },
+                    { name: t.tax, value: totalTax || 1 },
                   ]}
                   cx="50%"
                   cy="50%"
@@ -6479,6 +6643,27 @@ function ZakatCalculator() {
 
   const [result, setResult] = useState<any>(null);
 
+  const verses = [
+    {
+      source: "Quran 2:43",
+      arabic: "وَأَقِيمُوا۟ ٱلصَّلَوٰةَ وَءَاتُوا۟ ٱلزَّكَوٰةَ وَٱرْكَعُوا۟ مَعَ ٱلرَّٰكِعِينَ",
+      english: "And establish prayer and give zakah and bow with those who bow [in worship and obedience].",
+      bangla: "আর তোমরা সালাত কায়েম কর, যাকাত দাও এবং রুকুকারীদের সাথে রুকু কর।"
+    },
+    {
+      source: "Quran 9:60",
+      arabic: "إِنَّمَا ٱلصَّدَقَـٰتُ لِلْفُقَرَآءِ وَٱلْمَسَـٰكِينِ وَٱلْعَـٰমِلِينَ عَلَيْهَا وَٱلْمُؤَلَّفَةِ قُلُوبُهُمْ وَفِى ٱلرِّقَابِ وَٱلْغَـٰرِمِينَ وَفِى سَبِيلِ ٱللَّهِ وَٱبْنِ ٱلسَّبِিলِ ۖ فَرِيضَةًۭ مِّنَ ٱللَّهِ ۗ وَٱللَّهُ عَلِيمٌ حَكِيمٌۭ",
+      english: "Zakah expenditures are only for the poor and for the needy and for those employed to collect [zakah] and for bringing hearts together [for Islam] and for freeing captives [or slaves] and for those in debt and for the cause of Allah and for the [stranded] traveler - an obligation [imposed] by Allah . And Allah is Knowing and Wise.",
+      bangla: "সাদাকাহ (যাকাত) তো কেবল ফকীর, মিসকীন, যাকাত আদায়কারী কর্মচারী, যাদের চিত্ত আকর্ষণ করা প্রয়োজন তাদের জন্য, দাসমুক্তিতে, ঋণগ্রস্তদের জন্য, আল্লাহর পথে এবং মুসাফিরদের জন্য। এটা আল্লাহর পক্ষ থেকে নির্ধারিত ফরয। আর আল্লাহ সর্বজ্ঞ, প্রজ্ঞাময়।"
+    },
+    {
+      source: "Hadith (Bukhari)",
+      arabic: "بُنِيَ الإِسْلاَمُ عَلَى خَمْسٍ شَهَادَةِ أَنْ لاَ إِلَهَ إِلاَّ اللَّهُ وَأَنَّ مُحَمَّدًا رَسُولُ اللَّهِ، وَإِقَامِ الصَّلاَةِ، وَإِيتَاءِ الزَّكَاةِ، وَالْحَجِّ، وَصَوْمِ رَمَضَانَ",
+      english: "Islam is based on five (pillars): To testify that none has the right to be worshipped but Allah and Muhammad is Allah's Messenger, to offer the (compulsory congregational) prayers dutifully and perfectly, to pay Zakat, to perform Hajj and to observe fast during the month of Ramadan.",
+      bangla: "ইসলামের ভিত্তি পাঁচটি: এই সাক্ষ্য দেয়া যে, আল্লাহ ছাড়া কোনো ইলাহ নেই এবং মুহাম্মাদ আল্লাহর রাসূল, সালাত কায়েম করা, যাকাত প্রদান করা, হাজ্জ পালন করা এবং রমযানের সিয়াম পালন করা।"
+    }
+  ];
+
   const calculateZakat = () => {
     const cashVal = parseFloat(assets.cash) || 0;
     const bankVal = parseFloat(assets.bank) || 0;
@@ -6520,6 +6705,35 @@ function ZakatCalculator() {
           "সিস্টেম স্বয়ংক্রিয়ভাবে ২.৫% হারে আপনার প্রদেয় যাকাতের পরিমাণ হিসাব করবে।"
         ]}
       />
+
+      {/* Quran & Hadith Verses */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {verses.map((v, i) => (
+          <motion.div 
+            key={i}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.1 }}
+            className="neo-card p-6 rounded-3xl bg-white/50 backdrop-blur-sm border border-brand-100/50 space-y-4"
+          >
+            <div className="flex items-center gap-2 text-brand-600 mb-2">
+              <Book size={16} />
+              <span className="text-[10px] font-black uppercase tracking-widest">{v.source}</span>
+            </div>
+            <p className="text-lg font-arabic text-right leading-relaxed text-zinc-800" dir="rtl">
+              {v.arabic}
+            </p>
+            <div className="space-y-3 pt-2 border-t border-zinc-100">
+              <p className="text-xs text-zinc-600 leading-relaxed italic">
+                "{v.english}"
+              </p>
+              <p className="text-xs text-zinc-800 font-medium leading-relaxed">
+                "{v.bangla}"
+              </p>
+            </div>
+          </motion.div>
+        ))}
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
         <div className="space-y-8">

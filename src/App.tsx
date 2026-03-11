@@ -25,6 +25,7 @@ import {
   Search,
   Shield,
   Book,
+  Share2,
   AlertCircle,
   CheckCircle2,
   Sparkles,
@@ -61,7 +62,12 @@ import {
   Loader2,
   Lock,
   Menu,
-  Languages
+  Languages,
+  Filter,
+  ArrowUp,
+  ArrowDown,
+  HelpCircle,
+  Cloud,
 } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import { motion, AnimatePresence } from 'motion/react';
@@ -81,6 +87,7 @@ import {
   Area
 } from 'recharts';
 import Mushak91Form from './components/Mushak91Form';
+import SocialIntegration from './components/SocialIntegration';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -159,7 +166,7 @@ function SectionGuide({ title, steps, language = 'bn' }: { title: string, steps:
   );
 }
 
-type Tab = 'dashboard' | 'vat' | 'tax' | 'tariff' | 'manifest' | 'reports' | 'blog' | 'tools' | 'ai' | 'invoice' | 'history' | 'notices' | 'rebate' | 'hscode' | 'subscription' | 'crypto-tax' | 'blockchain-verify' | 'tokenized-cert' | 'tax-advisory' | 'zakat' | 'final-tax' | 'developer' | 'documents' | 'critical-vat';
+type Tab = 'dashboard' | 'vat' | 'tax' | 'tariff' | 'manifest' | 'reports' | 'blog' | 'tools' | 'ai' | 'invoice' | 'history' | 'notices' | 'rebate' | 'hscode' | 'subscription' | 'crypto-tax' | 'blockchain-verify' | 'tokenized-cert' | 'tax-advisory' | 'zakat' | 'final-tax' | 'developer' | 'documents' | 'critical-vat' | 'help' | 'social';
 
 interface TaxNotice {
   id: number;
@@ -335,6 +342,7 @@ export default function App() {
                       <NavItem icon={<FileSearch size={18} />} label="Document Centre" active={activeTab === 'documents'} onClick={() => { setActiveTab('documents'); setIsMobileMenuOpen(false); }} />
                       <NavItem icon={<Receipt size={18} />} label="VAT Calculator" active={activeTab === 'vat'} onClick={() => { setActiveTab('vat'); setIsMobileMenuOpen(false); }} />
                       <NavItem icon={<Calculator size={18} />} label="Tax Calculator" active={activeTab === 'tax'} onClick={() => { setActiveTab('tax'); setIsMobileMenuOpen(false); }} />
+                      <NavItem icon={<Share2 size={18} />} label="Social Integration" active={activeTab === 'social'} onClick={() => { setActiveTab('social'); setIsMobileMenuOpen(false); }} />
                       <NavItem icon={<Shield size={18} />} label="চূড়ান্ত ট্যাক্স ক্যালকুলেশন" active={activeTab === 'final-tax'} onClick={() => { setActiveTab('final-tax'); setIsMobileMenuOpen(false); }} />
                     </div>
                   </div>
@@ -353,6 +361,13 @@ export default function App() {
                       <NavItem icon={<Ship size={18} />} label="Tariff Calculator" active={activeTab === 'tariff'} onClick={() => { setActiveTab('tariff'); setIsMobileMenuOpen(false); }} />
                       <NavItem icon={<ClipboardCheck size={18} />} label="Manifest & Cargo" active={activeTab === 'manifest'} onClick={() => { setActiveTab('manifest'); setIsMobileMenuOpen(false); }} />
                       <NavItem icon={<Receipt size={18} />} label="Invoice Generator" active={activeTab === 'invoice'} onClick={() => { setActiveTab('invoice'); setIsMobileMenuOpen(false); }} />
+                    </div>
+                  </div>
+                  <div>
+                    <p className="px-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-4">Resources</p>
+                    <div className="space-y-1">
+                      <NavItem icon={<History size={18} />} label={t.history} active={activeTab === 'history'} onClick={() => { setActiveTab('history'); setIsMobileMenuOpen(false); }} />
+                      <NavItem icon={<AlertCircle size={18} />} label={t.help} active={activeTab === 'help'} onClick={() => { setActiveTab('help'); setIsMobileMenuOpen(false); }} />
                     </div>
                   </div>
                 </nav>
@@ -440,6 +455,12 @@ export default function App() {
               label={t.tax} 
               active={activeTab === 'tax'} 
               onClick={() => setActiveTab('tax')} 
+            />
+            <NavItem 
+              icon={<Share2 size={18} />} 
+              label={t.social} 
+              active={activeTab === 'social'} 
+              onClick={() => setActiveTab('social')} 
             />
             <NavItem 
               icon={<Shield size={18} />} 
@@ -530,6 +551,12 @@ export default function App() {
               label={t.history} 
               active={activeTab === 'history'} 
               onClick={() => setActiveTab('history')} 
+            />
+            <NavItem 
+              icon={<AlertCircle size={18} />} 
+              label={t.help} 
+              active={activeTab === 'help'} 
+              onClick={() => setActiveTab('help')} 
             />
           </div>
 
@@ -756,6 +783,7 @@ export default function App() {
             {activeTab === 'blog' && <BlogView />}
             {activeTab === 'tools' && <ToolsView setActiveTab={setActiveTab} />}
             {activeTab === 'history' && <HistoryView vatHistory={vatHistory} taxHistory={taxHistory} />}
+            {activeTab === 'help' && <HelpCenter setActiveTab={setActiveTab} />}
             {activeTab === 'notices' && <NoticesView notices={notices} onRefresh={fetchNotices} />}
             {activeTab === 'subscription' && <SubscriptionView />}
             {activeTab === 'crypto-tax' && <CryptoTaxAdvisory />}
@@ -767,6 +795,7 @@ export default function App() {
             {activeTab === 'critical-vat' && <Mushak91Form />}
             {activeTab === 'developer' && isDeveloper && <DeveloperPanel notices={notices} setNotices={setNotices} />}
             {activeTab === 'documents' && <DocumentCentre language={language} />}
+            {activeTab === 'social' && <SocialIntegration />}
           </motion.div>
         </AnimatePresence>
       </main>
@@ -2201,36 +2230,260 @@ function TaxCalculator({ onComplete }: { onComplete: () => void }) {
 }
 
 function HistoryView({ vatHistory, taxHistory }: { vatHistory: any[], taxHistory: any[] }) {
+  const [filterCategory, setFilterCategory] = useState('All');
+  const [filterDateStart, setFilterDateStart] = useState('');
+  const [filterDateEnd, setFilterDateEnd] = useState('');
+  const [filterVatIncluded, setFilterVatIncluded] = useState('All');
+  const [sortBy, setSortBy] = useState<'date' | 'amount'>('date');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [showFilters, setShowFilters] = useState(false);
+  const [isGoogleAuthenticated, setIsGoogleAuthenticated] = useState(false);
+  const [isSavingToDrive, setIsSavingToDrive] = useState(false);
+
+  useEffect(() => {
+    checkGoogleAuth();
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'OAUTH_AUTH_SUCCESS') {
+        setIsGoogleAuthenticated(true);
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
+  const checkGoogleAuth = async () => {
+    try {
+      const res = await fetch('/api/auth/status');
+      const data = await res.json();
+      setIsGoogleAuthenticated(data.isAuthenticated);
+    } catch (e) {
+      console.error("Auth check failed", e);
+    }
+  };
+
+  const handleGoogleConnect = async () => {
+    try {
+      const res = await fetch('/auth/google/url');
+      const { url } = await res.json();
+      window.open(url, 'google_oauth', 'width=600,height=700');
+    } catch (e) {
+      console.error("Failed to get auth URL", e);
+    }
+  };
+
+  const saveToDrive = async () => {
+    if (!isGoogleAuthenticated) {
+      handleGoogleConnect();
+      return;
+    }
+
+    setIsSavingToDrive(true);
+    try {
+      const csvContent = "Date,Label,Type,Base Amount,Liability,Status\n" + 
+        filteredHistory.map(item => {
+          const type = item.vatAmount !== undefined ? 'VAT' : 'Income Tax';
+          const base = item.baseAmount || item.totalIncome;
+          const liability = item.vatAmount || item.totalTaxLiability;
+          return `${new Date(item.createdAt).toLocaleDateString()},${item.label || 'Untitled'},${type},${base},${liability},Calculated`;
+        }).join("\n");
+
+      const res = await fetch('/api/drive/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: csvContent,
+          fileName: `Tax_History_${new Date().toISOString().split('T')[0]}.csv`,
+          mimeType: 'text/csv'
+        })
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        alert(`Successfully saved to Google Drive! View here: ${data.link}`);
+      } else {
+        throw new Error(data.error);
+      }
+    } catch (e) {
+      console.error("Save to Drive failed", e);
+      alert("Failed to save to Google Drive. Please try again.");
+    } finally {
+      setIsSavingToDrive(false);
+    }
+  };
+
+  const categories = ['All', ...new Set(vatHistory.map(item => item.category).filter(Boolean))];
+
+  const filteredHistory = [...vatHistory, ...taxHistory].filter(item => {
+    // Category filter (only applies to VAT records)
+    if (filterCategory !== 'All' && item.vatAmount !== undefined) {
+      if (item.category !== filterCategory) return false;
+    }
+
+    // Date range filter
+    if (filterDateStart) {
+      if (new Date(item.createdAt) < new Date(filterDateStart)) return false;
+    }
+    if (filterDateEnd) {
+      const endDate = new Date(filterDateEnd);
+      endDate.setHours(23, 59, 59, 999);
+      if (new Date(item.createdAt) > endDate) return false;
+    }
+
+    // VAT Included filter (only applies to VAT records)
+    if (filterVatIncluded !== 'All' && item.vatAmount !== undefined) {
+      const included = filterVatIncluded === 'Yes' ? 1 : 0;
+      if (item.includeVAT !== included) return false;
+    }
+
+    return true;
+  }).sort((a, b) => {
+    let comparison = 0;
+    if (sortBy === 'date') {
+      comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+    } else {
+      const valA = a.vatAmount !== undefined ? a.vatAmount : a.totalTaxLiability;
+      const valB = b.vatAmount !== undefined ? b.vatAmount : b.totalTaxLiability;
+      comparison = valA - valB;
+    }
+    return sortOrder === 'desc' ? -comparison : comparison;
+  });
+
+  const toggleSort = (field: 'date' | 'amount') => {
+    if (sortBy === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(field);
+      setSortOrder('desc');
+    }
+  };
+
   return (
     <div className="bg-white rounded-3xl shadow-sm border border-[#F3F4F6] overflow-hidden">
-      <div className="p-8 border-b border-[#F3F4F6] flex justify-between items-center">
-        <h3 className="text-xl font-bold">Calculation History</h3>
-        <div className="flex gap-2">
-          <button className="px-4 py-2 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-sm font-bold hover:bg-white transition-all">
-            Filter
-          </button>
-          <button className="px-4 py-2 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-sm font-bold hover:bg-white transition-all">
-            Export CSV
-          </button>
+      <div className="p-8 border-b border-[#F3F4F6] flex flex-col gap-6">
+        <div className="flex justify-between items-center">
+          <h3 className="text-xl font-bold">Calculation History</h3>
+          <div className="flex gap-2">
+            <button 
+              onClick={() => setShowFilters(!showFilters)}
+              className={cn(
+                "px-4 py-2 border rounded-xl text-sm font-bold transition-all flex items-center gap-2",
+                showFilters ? "bg-brand-50 border-brand-200 text-brand-600" : "bg-[#F9FAFB] border-[#E5E7EB] hover:bg-white"
+              )}
+            >
+              <Filter size={16} />
+              Filter
+            </button>
+            <button className="px-4 py-2 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-sm font-bold hover:bg-white transition-all flex items-center gap-2">
+              <Download size={16} />
+              Export CSV
+            </button>
+            <button 
+              onClick={saveToDrive}
+              disabled={isSavingToDrive}
+              className={cn(
+                "px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2",
+                isGoogleAuthenticated 
+                  ? "bg-blue-50 border border-blue-200 text-blue-600 hover:bg-blue-100" 
+                  : "bg-zinc-900 text-white hover:bg-zinc-800"
+              )}
+            >
+              {isSavingToDrive ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <Cloud size={16} />
+              )}
+              {isGoogleAuthenticated ? "Save to Drive" : "Connect Drive"}
+            </button>
+          </div>
         </div>
+
+        {showFilters && (
+          <motion.div 
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-4 border-t border-zinc-50"
+          >
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Category</label>
+              <select 
+                value={filterCategory}
+                onChange={(e) => setFilterCategory(e.target.value)}
+                className="w-full px-3 py-2 bg-zinc-50 border border-zinc-100 rounded-xl text-sm outline-none focus:ring-2 focus:ring-brand-500"
+              >
+                {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Date Range</label>
+              <div className="flex items-center gap-2">
+                <input 
+                  type="date"
+                  value={filterDateStart}
+                  onChange={(e) => setFilterDateStart(e.target.value)}
+                  className="w-full px-3 py-2 bg-zinc-50 border border-zinc-100 rounded-xl text-sm outline-none focus:ring-2 focus:ring-brand-500"
+                />
+                <span className="text-zinc-400">-</span>
+                <input 
+                  type="date"
+                  value={filterDateEnd}
+                  onChange={(e) => setFilterDateEnd(e.target.value)}
+                  className="w-full px-3 py-2 bg-zinc-50 border border-zinc-100 rounded-xl text-sm outline-none focus:ring-2 focus:ring-brand-500"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">VAT Included</label>
+              <select 
+                value={filterVatIncluded}
+                onChange={(e) => setFilterVatIncluded(e.target.value)}
+                className="w-full px-3 py-2 bg-zinc-50 border border-zinc-100 rounded-xl text-sm outline-none focus:ring-2 focus:ring-brand-500"
+              >
+                <option value="All">All</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+              </select>
+            </div>
+            <div className="flex items-end">
+              <button 
+                onClick={() => {
+                  setFilterCategory('All');
+                  setFilterDateStart('');
+                  setFilterDateEnd('');
+                  setFilterVatIncluded('All');
+                }}
+                className="w-full px-4 py-2 text-zinc-500 text-sm font-bold hover:text-brand-600 transition-all"
+              >
+                Reset Filters
+              </button>
+            </div>
+          </motion.div>
+        )}
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-left">
           <thead>
             <tr className="bg-[#F9FAFB] text-[#6B7280] text-xs font-bold uppercase tracking-wider">
-              <th className="px-8 py-4">Date</th>
+              <th className="px-8 py-4 cursor-pointer hover:bg-zinc-100 transition-colors" onClick={() => toggleSort('date')}>
+                <div className="flex items-center gap-2">
+                  Date
+                  {sortBy === 'date' && (sortOrder === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                </div>
+              </th>
               <th className="px-8 py-4">Label</th>
               <th className="px-8 py-4">Type</th>
               <th className="px-8 py-4">Base Amount</th>
-              <th className="px-8 py-4">Liability</th>
+              <th className="px-8 py-4 cursor-pointer hover:bg-zinc-100 transition-colors" onClick={() => toggleSort('amount')}>
+                <div className="flex items-center gap-2">
+                  Liability
+                  {sortBy === 'amount' && (sortOrder === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                </div>
+              </th>
               <th className="px-8 py-4">Status</th>
               <th className="px-8 py-4 text-right">Action</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#F3F4F6]">
-            {[...vatHistory, ...taxHistory]
-              .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-              .map((item, i) => (
+            {filteredHistory.map((item, i) => (
                 <tr key={i} className="hover:bg-[#F9FAFB] transition-colors group">
                   <td className="px-8 py-5 text-sm font-medium">
                     {new Date(item.createdAt).toLocaleDateString()}
@@ -2267,6 +2520,189 @@ function HistoryView({ vatHistory, taxHistory }: { vatHistory: any[], taxHistory
               ))}
           </tbody>
         </table>
+      </div>
+    </div>
+  );
+}
+
+function HelpCenter({ setActiveTab }: { setActiveTab: (tab: Tab) => void }) {
+  const [activeCategory, setActiveCategory] = useState<'guides' | 'faqs'>('guides');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const guides = [
+    {
+      title: "How to calculate VAT?",
+      description: "Learn how to use our VAT calculator for both inclusive and exclusive amounts.",
+      steps: [
+        "Select the VAT Calculator from the sidebar.",
+        "Enter the base amount of your transaction.",
+        "Choose the applicable VAT rate (Standard 15%, or others).",
+        "Toggle 'VAT Included' if the amount already contains VAT.",
+        "Click 'Calculate' to see the breakdown and save to history."
+      ]
+    },
+    {
+      title: "Income Tax Assessment",
+      description: "A step-by-step guide to estimating your personal income tax liability.",
+      steps: [
+        "Navigate to the Tax Calculator section.",
+        "Enter your total annual income from all sources.",
+        "Add any applicable deductions or investments for rebate.",
+        "The system will apply the latest NBR tax slabs automatically.",
+        "Review your tax liability and effective tax rate."
+      ]
+    },
+    {
+      title: "Using the AI Tax Advisor",
+      description: "Get instant answers to complex tax questions using our Gemini-powered AI.",
+      steps: [
+        "Click on the 'AI Tax Advisor' tab.",
+        "Type your question in natural language (English or Bangla).",
+        "The AI will analyze current NBR regulations and provide a concise answer.",
+        "You can ask follow-up questions for more detail."
+      ]
+    }
+  ];
+
+  const faqs = [
+    {
+      question: "What is the standard VAT rate in Bangladesh?",
+      answer: "The standard VAT rate in Bangladesh is 15%. However, there are reduced rates of 5%, 7.5%, and 10% for specific goods and services as per the VAT Act 2012."
+    },
+    {
+      question: "How is the Zakat nisab calculated?",
+      answer: "The Zakat nisab is typically based on the value of 52.5 tolas (approx. 612.36 grams) of silver. Our Zakat calculator uses real-time or updated market prices to determine if you are eligible."
+    },
+    {
+      question: "Can I export my calculation history?",
+      answer: "Yes, you can export your VAT and Tax calculation history as a CSV file from the 'History' view for your accounting records."
+    },
+    {
+      question: "Is my data secure?",
+      answer: "We use industry-standard encryption and secure local storage for your calculations. We do not share your financial data with third parties."
+    }
+  ];
+
+  const filteredGuides = guides.filter(g => 
+    g.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    g.description.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const filteredFaqs = faqs.filter(f => 
+    f.question.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    f.answer.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  return (
+    <div className="max-w-5xl mx-auto space-y-8 pb-20">
+      <div className="neo-card p-10 rounded-[2.5rem] bg-gradient-to-br from-brand-600 to-emerald-700 text-white relative overflow-hidden">
+        <div className="relative z-10 space-y-4">
+          <h2 className="text-4xl font-black tracking-tighter">How can we help you?</h2>
+          <p className="text-brand-100 max-w-xl">Search our knowledge base for guides, FAQs, and expert tax advice.</p>
+          <div className="relative max-w-md group">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-300 group-focus-within:text-white transition-colors" size={20} />
+            <input 
+              type="text"
+              placeholder="Search guides or FAQs..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-12 pr-4 py-4 bg-white/10 border border-white/20 rounded-2xl text-white placeholder:text-brand-200 outline-none focus:ring-4 focus:ring-white/10 transition-all"
+            />
+          </div>
+        </div>
+        <AlertCircle className="absolute -right-10 -bottom-10 text-white/10 w-64 h-64 rotate-12" />
+      </div>
+
+      <div className="flex gap-4 border-b border-zinc-100 pb-px">
+        <button 
+          onClick={() => setActiveCategory('guides')}
+          className={cn(
+            "px-6 py-3 text-sm font-black uppercase tracking-widest transition-all relative",
+            activeCategory === 'guides' ? "text-brand-600" : "text-zinc-400 hover:text-zinc-600"
+          )}
+        >
+          User Guides
+          {activeCategory === 'guides' && <motion.div layoutId="help-tab" className="absolute bottom-0 left-0 right-0 h-1 bg-brand-500 rounded-full" />}
+        </button>
+        <button 
+          onClick={() => setActiveCategory('faqs')}
+          className={cn(
+            "px-6 py-3 text-sm font-black uppercase tracking-widest transition-all relative",
+            activeCategory === 'faqs' ? "text-brand-600" : "text-zinc-400 hover:text-zinc-600"
+          )}
+        >
+          FAQs
+          {activeCategory === 'faqs' && <motion.div layoutId="help-tab" className="absolute bottom-0 left-0 right-0 h-1 bg-brand-500 rounded-full" />}
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 gap-6">
+        {activeCategory === 'guides' ? (
+          filteredGuides.map((guide, i) => (
+            <motion.div 
+              key={i}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.1 }}
+              className="neo-card p-8 rounded-[2rem] space-y-6"
+            >
+              <div className="flex items-start justify-between">
+                <div className="space-y-1">
+                  <h3 className="text-xl font-bold text-zinc-900">{guide.title}</h3>
+                  <p className="text-sm text-zinc-500">{guide.description}</p>
+                </div>
+                <div className="p-3 bg-brand-50 text-brand-600 rounded-2xl">
+                  <Book size={24} />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {guide.steps.map((step, si) => (
+                  <div key={si} className="p-4 bg-zinc-50 rounded-2xl border border-zinc-100 flex gap-3">
+                    <span className="w-6 h-6 rounded-full bg-brand-500 text-white flex items-center justify-center text-[10px] font-black shrink-0">
+                      {si + 1}
+                    </span>
+                    <p className="text-xs text-zinc-700 leading-relaxed font-medium">{step}</p>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          ))
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {filteredFaqs.map((faq, i) => (
+              <motion.div 
+                key={i}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: i * 0.05 }}
+                className="neo-card p-8 rounded-[2rem] space-y-4"
+              >
+                <div className="flex items-center gap-3 text-brand-600">
+                  <MessageSquare size={20} />
+                  <h4 className="font-bold">Question</h4>
+                </div>
+                <p className="text-lg font-bold text-zinc-900 leading-tight">{faq.question}</p>
+                <div className="pt-4 border-t border-zinc-50">
+                  <p className="text-sm text-zinc-600 leading-relaxed">{faq.answer}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="neo-card p-8 rounded-[2rem] bg-zinc-900 text-white flex flex-col md:flex-row items-center justify-between gap-6">
+        <div className="space-y-1 text-center md:text-left">
+          <h4 className="text-xl font-bold">Still have questions?</h4>
+          <p className="text-zinc-400 text-sm">Our support team is available 24/7 to help you with your tax queries.</p>
+        </div>
+        <button 
+          onClick={() => setActiveTab('ai')}
+          className="px-8 py-4 bg-brand-500 hover:bg-brand-600 text-white rounded-2xl font-black text-sm transition-all shadow-xl shadow-brand-500/30 active:scale-95 flex items-center gap-2"
+        >
+          <Send size={18} />
+          Contact Support
+        </button>
       </div>
     </div>
   );

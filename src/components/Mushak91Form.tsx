@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { validateBIN, validateAmount, validateDate } from "../utils/validation";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 const fmt = (n: number) => Number(n || 0).toLocaleString("en-BD", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -30,15 +31,18 @@ const Field = ({ label, children, refSource, required }: { label: string, childr
   </div>
 );
 
-const Input = ({ value, onChange, placeholder, type = "text", style = {} }: { value: any, onChange: (v: string) => void, placeholder?: string, type?: string, style?: any }) => (
-  <input
-    type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
-    style={{
-      width: "100%", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)",
-      borderRadius: 6, padding: "8px 11px", color: "#E2E8F0", fontSize: 12, fontFamily: "inherit",
-      outline: "none", boxSizing: "border-box", ...style
-    }}
-  />
+const Input = ({ value, onChange, placeholder, type = "text", style = {}, error }: { value: any, onChange: (v: string) => void, placeholder?: string, type?: string, style?: any, error?: string }) => (
+  <div style={{ width: "100%" }}>
+    <input
+      type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
+      style={{
+        width: "100%", background: "rgba(255,255,255,0.04)", border: `1px solid ${error ? "#EF4444" : "rgba(255,255,255,0.1)"}`,
+        borderRadius: 6, padding: "8px 11px", color: "#E2E8F0", fontSize: 12, fontFamily: "inherit",
+        outline: "none", boxSizing: "border-box", ...style
+      }}
+    />
+    {error && <div style={{ color: "#EF4444", fontSize: 9, marginTop: 4, fontWeight: 500 }}>{error}</div>}
+  </div>
 );
 
 const Select = ({ value, onChange, options, style = {} }: { value: any, onChange: (v: string) => void, options: any[], style?: any }) => (
@@ -84,6 +88,27 @@ export default function Mushak91Form() {
     preparedBy: "", prepDate: "", carryForward: "", tcRef: ""
   });
 
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const validateTaxpayer = () => {
+    const newErrors: Record<string, string> = {};
+    if (!taxpayer.name) newErrors.name = "Name is required";
+    
+    const binVal = validateBIN(taxpayer.bin);
+    if (!binVal.isValid) newErrors.bin = binVal.message!;
+    
+    const dateVal = validateDate(taxpayer.prepDate);
+    if (!dateVal.isValid) newErrors.prepDate = dateVal.message!;
+    
+    if (taxpayer.carryForward) {
+      const amtVal = validateAmount(taxpayer.carryForward);
+      if (!amtVal.isValid) newErrors.carryForward = amtVal.message!;
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   // Section B — Supplies (Output VAT)
   const [supplies, setSupplies] = useState([emptySupply()]);
 
@@ -99,6 +124,11 @@ export default function Mushak91Form() {
   const [isSaving, setIsSaving] = useState(false);
 
   const saveToDatabase = async () => {
+    if (!validateTaxpayer()) {
+      alert("Please fix validation errors before saving.");
+      setActiveSection("info");
+      return;
+    }
     setIsSaving(true);
     try {
       const payload = {
@@ -248,10 +278,10 @@ export default function Mushak91Form() {
               <SectionHeader icon="🏢" label="Section I — Taxpayer & Period Information" color="#0369A1" />
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 <Field label="Registered Name / Trade Name" required refSource="§ 9, VAT Act 2012">
-                  <Input value={taxpayer.name} onChange={v => setTaxpayer(p => ({ ...p, name: v }))} placeholder="e.g. Rahimafrooz Bangladesh Ltd." />
+                  <Input value={taxpayer.name} onChange={v => setTaxpayer(p => ({ ...p, name: v }))} placeholder="e.g. Rahimafrooz Bangladesh Ltd." error={errors.name} />
                 </Field>
                 <Field label="Business Identification Number (BIN)" required refSource="§ 9, VAT Act 2012">
-                  <Input value={taxpayer.bin} onChange={v => setTaxpayer(p => ({ ...p, bin: v }))} placeholder="e.g. 002156789-0101" />
+                  <Input value={taxpayer.bin} onChange={v => setTaxpayer(p => ({ ...p, bin: v }))} placeholder="e.g. 002156789-0101" error={errors.bin} />
                 </Field>
                 <div style={{ gridColumn: "1 / -1" }}>
                   <Field label="Registered Business Address" refSource="Rule 12, VAT Rules 2016">
@@ -265,14 +295,14 @@ export default function Mushak91Form() {
                   <Select value={taxpayer.taxPeriodYear} onChange={v => setTaxpayer(p => ({ ...p, taxPeriodYear: v }))} options={YEARS} />
                 </Field>
                 <Field label="Carried Forward Credit (from prior month)" refSource="§ 52(3), VAT Act 2012">
-                  <Input value={taxpayer.carryForward} onChange={v => setTaxpayer(p => ({ ...p, carryForward: v }))} placeholder="৳ 0.00" type="number" />
+                  <Input value={taxpayer.carryForward} onChange={v => setTaxpayer(p => ({ ...p, carryForward: v }))} placeholder="৳ 0.00" type="number" error={errors.carryForward} />
                 </Field>
                 <Field label="Return Prepared By (Lawyer / Firm Name)" refSource="Professional obligation">
                   <Input value={taxpayer.preparedBy} onChange={v => setTaxpayer(p => ({ ...p, preparedBy: v }))} placeholder="NBR Certified Tax Lawyer name" />
                 </Field>
                 <div style={{ gridColumn: "1 / -1" }}>
                   <Field label="Date of Preparation" required>
-                    <Input value={taxpayer.prepDate} onChange={v => setTaxpayer(p => ({ ...p, prepDate: v }))} type="date" />
+                    <Input value={taxpayer.prepDate} onChange={v => setTaxpayer(p => ({ ...p, prepDate: v }))} type="date" error={errors.prepDate} />
                   </Field>
                 </div>
               </div>

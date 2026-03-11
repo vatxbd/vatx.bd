@@ -7,6 +7,22 @@ import cors from "cors";
 import { body, validationResult } from "express-validator";
 import axios from "axios";
 import * as cheerio from "cheerio";
+import { google } from "googleapis";
+import cookieSession from "cookie-session";
+import dotenv from "dotenv";
+
+dotenv.config();
+
+// Extend Express Request type for session
+declare global {
+  namespace Express {
+    interface Request {
+      session: {
+        tokens?: any;
+      } | null;
+    }
+  }
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -163,6 +179,24 @@ db.exec(`
     createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 
+  CREATE TABLE IF NOT EXISTS social_links (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    platform TEXT NOT NULL,
+    url TEXT NOT NULL,
+    label TEXT,
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS ocr_entries (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    sourceType TEXT DEFAULT 'social_media',
+    rawText TEXT,
+    extractedData TEXT,
+    imageUrl TEXT,
+    status TEXT DEFAULT 'pending',
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
   -- Initial Partners
   INSERT INTO investment_partners (name, url, description)
   SELECT 'MetLife (Alico)', 'https://www.metlife.com.bd/', 'Life Insurance & Savings'
@@ -187,10 +221,96 @@ async function startServer() {
 
   app.use(cors());
   app.use(express.json());
+  app.use(cookieSession({
+    name: 'session',
+    keys: [process.env.SESSION_SECRET || 'vatx-secret'],
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    secure: true,
+    sameSite: 'none'
+  }));
+
+  // Google OAuth Setup
+  const oauth2Client = new google.auth.OAuth2(
+    process.env.GOOGLE_CLIENT_ID,
+    process.env.GOOGLE_CLIENT_SECRET,
+    `${process.env.APP_URL}/auth/google/callback`
+  );
 
   // API Routes
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok" });
+  });
+
+  // Google OAuth Routes
+  app.get("/auth/google/url", (req, res) => {
+    const url = oauth2Client.generateAuthUrl({
+      access_type: 'offline',
+      scope: ['https://www.googleapis.com/auth/drive.file', 'profile', 'email'],
+      prompt: 'consent'
+    });
+    res.json({ url });
+  });
+
+  app.get("/auth/google/callback", async (req, res) => {
+    const { code } = req.query;
+    try {
+      const { tokens } = await oauth2Client.getToken(code as string);
+      req.session!.tokens = tokens;
+      res.send(`
+        <html>
+          <body>
+            <script>
+              window.opener.postMessage({ type: 'OAUTH_AUTH_SUCCESS' }, '*');
+              window.close();
+            </script>
+            <p>Authentication successful. You can close this window.</p>
+          </body>
+        </html>
+      `);
+    } catch (error) {
+      console.error("Google Auth Error:", error);
+      res.status(500).send("Authentication failed");
+    }
+  });
+
+  app.get("/api/auth/status", (req, res) => {
+    res.json({ isAuthenticated: !!req.session?.tokens });
+  });
+
+  app.post("/api/auth/logout", (req, res) => {
+    req.session = null;
+    res.json({ success: true });
+  });
+
+  app.post("/api/drive/upload", async (req, res) => {
+    const tokens = req.session?.tokens;
+    if (!tokens) return res.status(401).json({ error: "Not authenticated" });
+
+    const { content, fileName, mimeType = 'text/plain' } = req.body;
+    
+    try {
+      oauth2Client.setCredentials(tokens);
+      const drive = google.drive({ version: 'v3', auth: oauth2Client });
+      
+      const fileMetadata = {
+        name: fileName,
+      };
+      const media = {
+        mimeType: mimeType,
+        body: content,
+      };
+      
+      const response = await drive.files.create({
+        requestBody: fileMetadata,
+        media: media,
+        fields: 'id, webViewLink',
+      });
+
+      res.json({ success: true, fileId: response.data.id, link: response.data.webViewLink });
+    } catch (error) {
+      console.error("Drive Upload Error:", error);
+      res.status(500).json({ error: "Failed to upload to Google Drive" });
+    }
   });
 
   // VAT Calculation
@@ -697,12 +817,39 @@ async function startServer() {
 
   app.get("/api/mushak91/:id", (req, res) => {
     const { id } = req.params;
-    const submission = db.prepare("SELECT * FROM mushak91_submissions WHERE id = ?").get(id);
-    if (submission) {
-      res.json({ ...submission, formData: JSON.parse(submission.formData) });
-    } else {
-      res.status(404).json({ error: "Submission not found" });
-    }
+    const submission = db.prepare("SELECT * FROM mushak91_submissions WHERE id = ?").get(id) as any;
+    if (!submission) return res.status(404).json({ error: "Submission not found" });
+    res.json({ ...submission, formData: JSON.parse(submission.formData) });
+  });
+
+  // Social Integration Routes
+  app.get("/api/social/links", (req, res) => {
+    const links = db.prepare("SELECT * FROM social_links ORDER BY createdAt DESC").all();
+    res.json(links);
+  });
+
+  app.post("/api/social/links", (req, res) => {
+    const { platform, url, label } = req.body;
+    const result = db.prepare("INSERT INTO social_links (platform, url, label) VALUES (?, ?, ?)").run(platform, url, label);
+    res.json({ id: result.lastInsertRowid, platform, url, label });
+  });
+
+  app.delete("/api/social/links/:id", (req, res) => {
+    const { id } = req.params;
+    db.prepare("DELETE FROM social_links WHERE id = ?").run(id);
+    res.json({ success: true });
+  });
+
+  app.get("/api/social/ocr", (req, res) => {
+    const entries = db.prepare("SELECT * FROM ocr_entries ORDER BY createdAt DESC").all();
+    res.json(entries.map(e => ({ ...e, extractedData: JSON.parse(e.extractedData || '{}') })));
+  });
+
+  app.post("/api/social/ocr", async (req, res) => {
+    const { rawText, extractedData, imageUrl, sourceType } = req.body;
+    const result = db.prepare("INSERT INTO ocr_entries (rawText, extractedData, imageUrl, sourceType) VALUES (?, ?, ?, ?)")
+      .run(rawText, JSON.stringify(extractedData), imageUrl, sourceType);
+    res.json({ id: result.lastInsertRowid, success: true });
   });
 
   // Run immediately on start and then every 2 hours

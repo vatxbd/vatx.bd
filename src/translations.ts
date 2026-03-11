@@ -24,6 +24,7 @@ export const translations = {
     zakat: "Zakat Calculator",
     criticalVat: "Critical VAT (9.1)",
     documents: "Document Centre",
+    help: "Help & Support",
     search: "Search anything...",
     welcome: "Welcome back",
     language: "Language",
@@ -50,7 +51,8 @@ export const translations = {
     complianceScoreLabel: "Compliance",
     complianceDesc: "Your overall tax compliance health score",
     liabilityDistribution: "Liability Distribution",
-    realTime: "Real-time"
+    realTime: "Real-time",
+    social: "Social Integration"
   },
   bn: {
     dashboard: "ড্যাশবোর্ড",
@@ -75,6 +77,7 @@ export const translations = {
     zakat: "যাকাত ক্যালকুলেটর",
     criticalVat: "ক্রিটিক্যাল ভ্যাট (৯.১)",
     documents: "ডকুমেন্ট সেন্টার",
+    help: "সাহায্য ও সহযোগিতা",
     search: "যেকোনো কিছু খুঁজুন...",
     welcome: "স্বাগতম",
     language: "ভাষা",
@@ -101,6 +104,7 @@ export const translations = {
     complianceScoreLabel: "কমপ্লায়েন্স",
     complianceDesc: "আপনার সামগ্রিক ট্যাক্স কমপ্লায়েন্স স্কোর",
     liabilityDistribution: "দায়ের বন্টন",
-    realTime: "রিয়েল-টাইম"
+    realTime: "রিয়েল-টাইম",
+    social: "সোশ্যাল ইন্টিগ্রেশন"
   }
 };

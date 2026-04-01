@@ -38,7 +38,7 @@ const Input = ({ value, onChange, placeholder, type = "text", style = {}, error 
       style={{
         width: "100%", background: "rgba(255,255,255,0.04)", border: `1px solid ${error ? "#EF4444" : "rgba(255,255,255,0.1)"}`,
         borderRadius: 6, padding: "8px 11px", color: "#E2E8F0", fontSize: 12, fontFamily: "inherit",
-        outline: "none", boxSizing: "border-box", ...style
+        outline: "none", boxSizing: "border-box" as const, ...style
       }}
     />
     {error && <div style={{ color: "#EF4444", fontSize: 9, marginTop: 4, fontWeight: 500 }}>{error}</div>}
@@ -51,7 +51,7 @@ const Select = ({ value, onChange, options, style = {} }: { value: any, onChange
     style={{
       width: "100%", background: "#0E1628", border: "1px solid rgba(255,255,255,0.1)",
       borderRadius: 6, padding: "8px 11px", color: "#E2E8F0", fontSize: 12, fontFamily: "inherit",
-      outline: "none", boxSizing: "border-box", ...style
+      outline: "none", boxSizing: "border-box" as const, ...style
     }}>
     {options.map(o => <option key={o.value ?? o} value={o.value ?? o}>{o.label ?? o}</option>)}
   </select>
@@ -85,7 +85,7 @@ export default function Mushak91Form() {
   // Section A — Taxpayer Info
   const [taxpayer, setTaxpayer] = useState({
     name: "", bin: "", address: "", taxPeriodMonth: "March", taxPeriodYear: "2026",
-    preparedBy: "", prepDate: "", carryForward: "", tcRef: ""
+    preparedBy: "", prepDate: "", carryForward: "", tcRef: "", returnType: "Original"
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -209,7 +209,7 @@ export default function Mushak91Form() {
     { id: "summary",  label: "Summary",         icon: "⚖️", color: "#991B1B" },
   ];
 
-  const inputStyle = { background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 6, padding: "7px 10px", color: "#E2E8F0", fontSize: 11, fontFamily: "inherit", outline: "none", width: "100%", boxSizing: "border-box" };
+  const inputStyle = { background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 6, padding: "7px 10px", color: "#E2E8F0", fontSize: 11, fontFamily: "inherit", outline: "none", width: "100%", boxSizing: "border-box" as const };
 
   return (
     <div style={{
@@ -293,6 +293,9 @@ export default function Mushak91Form() {
                 </Field>
                 <Field label="Tax Period — Year" required refSource="§ 28, VAT Act 2012">
                   <Select value={taxpayer.taxPeriodYear} onChange={v => setTaxpayer(p => ({ ...p, taxPeriodYear: v }))} options={YEARS} />
+                </Field>
+                <Field label="Return Type" required refSource="Rule 34, VAT Rules 2016">
+                  <Select value={taxpayer.returnType} onChange={v => setTaxpayer(p => ({ ...p, returnType: v }))} options={["Original", "Amended", "Additional"]} />
                 </Field>
                 <Field label="Carried Forward Credit (from prior month)" refSource="§ 52(3), VAT Act 2012">
                   <Input value={taxpayer.carryForward} onChange={v => setTaxpayer(p => ({ ...p, carryForward: v }))} placeholder="৳ 0.00" type="number" error={errors.carryForward} />

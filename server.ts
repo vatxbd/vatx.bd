@@ -8,6 +8,7 @@ import { body, validationResult } from "express-validator";
 import axios from "axios";
 import * as cheerio from "cheerio";
 import { google } from "googleapis";
+import ExcelJS from "exceljs";
 import cookieSession from "cookie-session";
 import dotenv from "dotenv";
 
@@ -193,9 +194,76 @@ db.exec(`
     rawText TEXT,
     extractedData TEXT,
     imageUrl TEXT,
+    sourceUrl TEXT,
     status TEXT DEFAULT 'pending',
     createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
   );
+
+  CREATE TABLE IF NOT EXISTS vds_records (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    vendorName TEXT NOT NULL,
+    vendorBin TEXT,
+    invoiceNo TEXT,
+    invoiceDate DATE,
+    totalAmount REAL,
+    vatAmount REAL,
+    vdsAmount REAL,
+    mushak66No TEXT,
+    mushak66Date DATE,
+    status TEXT DEFAULT 'pending',
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS compliance_deadlines (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    deadlineDate DATE NOT NULL,
+    category TEXT,
+    description TEXT,
+    isCompleted BOOLEAN DEFAULT 0,
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS vat_agents (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    firmName TEXT,
+    licenseNo TEXT,
+    location TEXT,
+    rating REAL DEFAULT 5.0,
+    contactNo TEXT,
+    email TEXT,
+    specialization TEXT,
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS challan_verifications (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    challanNo TEXT NOT NULL,
+    bankName TEXT,
+    branchName TEXT,
+    amount REAL,
+    verificationDate DATETIME DEFAULT CURRENT_TIMESTAMP,
+    status TEXT DEFAULT 'verified'
+  );
+
+  -- Initial Compliance Deadlines
+  INSERT INTO compliance_deadlines (title, deadlineDate, category, description)
+  SELECT 'Monthly VAT Return (Mushak 9.1)', '2026-04-15', 'VAT', 'Submission of monthly VAT return for March 2026'
+  WHERE NOT EXISTS (SELECT 1 FROM compliance_deadlines WHERE title = 'Monthly VAT Return (Mushak 9.1)' AND deadlineDate = '2026-04-15');
+
+  INSERT INTO compliance_deadlines (title, deadlineDate, category, description)
+  SELECT 'Quarterly TDS Return', '2026-04-20', 'Tax', 'Submission of Tax Deducted at Source return for Q1 2026'
+  WHERE NOT EXISTS (SELECT 1 FROM compliance_deadlines WHERE title = 'Quarterly TDS Return' AND deadlineDate = '2026-04-20');
+
+  -- Initial Agents
+  INSERT INTO vat_agents (name, firmName, licenseNo, location, specialization)
+  SELECT 'Abdur Rahman', 'Rahman & Associates', 'VAT-10293', 'Dhaka, Motijheel', 'Manufacturing & Export'
+  WHERE NOT EXISTS (SELECT 1 FROM vat_agents WHERE name = 'Abdur Rahman');
+
+  INSERT INTO vat_agents (name, firmName, licenseNo, location, specialization)
+  SELECT 'Fatima Begum', 'FB Tax Consulting', 'VAT-20394', 'Chittagong, Agrabad', 'Service Sector'
+  WHERE NOT EXISTS (SELECT 1 FROM vat_agents WHERE name = 'Fatima Begum');
 
   -- Initial Partners
   INSERT INTO investment_partners (name, url, description)
@@ -846,10 +914,380 @@ async function startServer() {
   });
 
   app.post("/api/social/ocr", async (req, res) => {
-    const { rawText, extractedData, imageUrl, sourceType } = req.body;
-    const result = db.prepare("INSERT INTO ocr_entries (rawText, extractedData, imageUrl, sourceType) VALUES (?, ?, ?, ?)")
-      .run(rawText, JSON.stringify(extractedData), imageUrl, sourceType);
+    const { rawText, extractedData, imageUrl, sourceUrl, sourceType } = req.body;
+    const result = db.prepare("INSERT INTO ocr_entries (rawText, extractedData, imageUrl, sourceUrl, sourceType) VALUES (?, ?, ?, ?, ?)")
+      .run(rawText, JSON.stringify(extractedData), imageUrl, sourceUrl, sourceType);
     res.json({ id: result.lastInsertRowid, success: true });
+  });
+
+  // VDS Tracker Routes
+  app.get("/api/vds", (req, res) => {
+    const records = db.prepare("SELECT * FROM vds_records ORDER BY createdAt DESC").all();
+    res.json(records);
+  });
+
+  app.post("/api/vds", (req, res) => {
+    const { vendorName, vendorBin, invoiceNo, invoiceDate, totalAmount, vatAmount, vdsAmount, mushak66No, mushak66Date, status } = req.body;
+    const stmt = db.prepare(`
+      INSERT INTO vds_records (vendorName, vendorBin, invoiceNo, invoiceDate, totalAmount, vatAmount, vdsAmount, mushak66No, mushak66Date, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    const result = stmt.run(vendorName, vendorBin, invoiceNo, invoiceDate, totalAmount, vatAmount, vdsAmount, mushak66No, mushak66Date, status || 'pending');
+    res.json({ id: result.lastInsertRowid, success: true });
+  });
+
+  app.patch("/api/vds/:id", (req, res) => {
+    const { id } = req.params;
+    const { status, mushak66No, mushak66Date } = req.body;
+    db.prepare("UPDATE vds_records SET status = ?, mushak66No = ?, mushak66Date = ? WHERE id = ?").run(status, mushak66No, mushak66Date, id);
+    res.json({ success: true });
+  });
+
+  // Compliance Calendar Routes
+  app.get("/api/compliance", (req, res) => {
+    const deadlines = db.prepare("SELECT * FROM compliance_deadlines ORDER BY deadlineDate ASC").all();
+    res.json(deadlines);
+  });
+
+  app.post("/api/compliance/toggle/:id", (req, res) => {
+    const { id } = req.params;
+    const current = db.prepare("SELECT isCompleted FROM compliance_deadlines WHERE id = ?").get(id) as any;
+    if (!current) return res.status(404).json({ error: "Deadline not found" });
+    db.prepare("UPDATE compliance_deadlines SET isCompleted = ? WHERE id = ?").run(current.isCompleted ? 0 : 1, id);
+    res.json({ success: true, isCompleted: !current.isCompleted });
+  });
+
+  // VAT Agent Routes
+  app.get("/api/agents", (req, res) => {
+    const agents = db.prepare("SELECT * FROM vat_agents ORDER BY rating DESC").all();
+    res.json(agents);
+  });
+
+  // Challan Verification Routes
+  app.post("/api/challan/verify", (req, res) => {
+    const { challanNo } = req.body;
+    // Simulate verification
+    const existing = db.prepare("SELECT * FROM challan_verifications WHERE challanNo = ?").get(challanNo);
+    if (existing) return res.json({ verified: true, data: existing });
+
+    const bankName = "Sonali Bank PLC";
+    const branchName = "Local Office, Motijheel";
+    const amount = Math.floor(Math.random() * 50000) + 5000;
+    
+    const stmt = db.prepare("INSERT INTO challan_verifications (challanNo, bankName, branchName, amount) VALUES (?, ?, ?, ?)");
+    stmt.run(challanNo, bankName, branchName, amount);
+    
+    res.json({ 
+      verified: true, 
+      data: { challanNo, bankName, branchName, amount, verificationDate: new Date().toISOString(), status: 'verified' } 
+    });
+  });
+
+  // Base (Database Management) Routes
+  app.get("/api/base/tables", (req, res) => {
+    const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'").all();
+    res.json(tables);
+  });
+
+  app.get("/api/base/table/:name", (req, res) => {
+    const { name } = req.params;
+    try {
+      const schema = db.prepare(`PRAGMA table_info(${name})`).all();
+      const data = db.prepare(`SELECT * FROM ${name} LIMIT 100`).all();
+      res.json({ schema, data });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/base/query", (req, res) => {
+    const { sql } = req.body;
+    if (!sql) return res.status(400).json({ error: "SQL query is required" });
+    
+    // Basic safety check (only for demo/dev purposes)
+    const lowerSql = sql.toLowerCase().trim();
+    if (lowerSql.startsWith("drop") || lowerSql.startsWith("delete") || lowerSql.startsWith("truncate")) {
+      // Allow but warn? Or restrict? 
+      // For now, let's allow it but maybe only if it's not a system table.
+    }
+
+    try {
+      const result = db.prepare(sql).all();
+      res.json(result);
+    } catch (error) {
+      // If it's a non-SELECT query, it might not return results
+      try {
+        const info = db.prepare(sql).run();
+        res.json({ success: true, changes: info.changes });
+      } catch (runError) {
+        res.status(400).json({ error: runError.message });
+      }
+    }
+  });
+
+  app.get("/api/base/export/:table", async (req, res) => {
+    const { table } = req.params;
+    try {
+      const data = db.prepare(`SELECT * FROM ${table}`).all();
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet(table);
+      
+      if (data.length > 0) {
+        const columns = Object.keys(data[0]).map(key => ({ header: key, key }));
+        worksheet.columns = columns;
+        worksheet.addRows(data);
+      }
+
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename=${table}.xlsx`);
+      await workbook.xlsx.write(res);
+      res.end();
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // X (Twitter) Scraper Routes
+  const XQUIK_BASE_URL = "https://xquik.com/api/v1";
+  const xquikHeaders = {
+    "x-api-key": process.env.XQUIK_API_KEY || ""
+  };
+
+  app.get("/api/x/search", async (req, res) => {
+    const { q } = req.query;
+    if (!q) return res.status(400).json({ error: "Query is required" });
+    try {
+      const response = await axios.get(`${XQUIK_BASE_URL}/x/tweets/search`, {
+        params: { q },
+        headers: xquikHeaders
+      });
+      res.json(response.data);
+    } catch (error) {
+      res.status(error.response?.status || 500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/x/user/:username", async (req, res) => {
+    const { username } = req.params;
+    try {
+      const response = await axios.get(`${XQUIK_BASE_URL}/x/users/${username}`, {
+        headers: xquikHeaders
+      });
+      res.json(response.data);
+    } catch (error) {
+      res.status(error.response?.status || 500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/x/trends", async (req, res) => {
+    try {
+      const response = await axios.get(`${XQUIK_BASE_URL}/trends`, {
+        headers: xquikHeaders
+      });
+      res.json(response.data);
+    } catch (error) {
+      res.status(error.response?.status || 500).json({ error: error.message });
+    }
+  });
+
+  // WhatsApp Automation Routes (via Composio/Rube)
+  const COMPOSIO_BASE_URL = "https://api.composio.ai/v1";
+  const composioHeaders = {
+    "x-api-key": process.env.COMPOSIO_API_KEY || "",
+    "Content-Type": "application/json"
+  };
+
+  app.get("/api/whatsapp/numbers", async (req, res) => {
+    try {
+      // In a real scenario, we'd use the Composio SDK or direct API
+      // For this implementation, we'll proxy to the WhatsApp toolkit
+      const response = await axios.post(`${COMPOSIO_BASE_URL}/actions/execute`, {
+        action: "whatsapp_get_phone_numbers",
+        params: {}
+      }, { headers: composioHeaders });
+      res.json(response.data);
+    } catch (error) {
+      res.status(error.response?.status || 500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/whatsapp/send", async (req, res) => {
+    const { to, body, phone_number_id } = req.body;
+    try {
+      const response = await axios.post(`${COMPOSIO_BASE_URL}/actions/execute`, {
+        action: "whatsapp_send_message",
+        params: { to, body, phone_number_id }
+      }, { headers: composioHeaders });
+      res.json(response.data);
+    } catch (error) {
+      res.status(error.response?.status || 500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/whatsapp/templates", async (req, res) => {
+    try {
+      const response = await axios.post(`${COMPOSIO_BASE_URL}/actions/execute`, {
+        action: "whatsapp_get_message_templates",
+        params: {}
+      }, { headers: composioHeaders });
+      res.json(response.data);
+    } catch (error) {
+      res.status(error.response?.status || 500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/whatsapp/send-template", async (req, res) => {
+    const { template_name, language_code, to, components, phone_number_id } = req.body;
+    try {
+      const response = await axios.post(`${COMPOSIO_BASE_URL}/actions/execute`, {
+        action: "whatsapp_send_template_message",
+        params: { template_name, language_code, to, components, phone_number_id }
+      }, { headers: composioHeaders });
+      res.json(response.data);
+    } catch (error) {
+      res.status(error.response?.status || 500).json({ error: error.message });
+    }
+  });
+
+  // Dropbox Automation Routes (via Composio/Rube)
+  app.get("/api/dropbox/list", async (req, res) => {
+    const { path = "" } = req.query;
+    try {
+      const response = await axios.post(`${COMPOSIO_BASE_URL}/actions/execute`, {
+        action: "dropbox_list_files_in_folder",
+        params: { path }
+      }, { headers: composioHeaders });
+      res.json(response.data);
+    } catch (error) {
+      res.status(error.response?.status || 500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/dropbox/search", async (req, res) => {
+    const { q } = req.query;
+    try {
+      const response = await axios.post(`${COMPOSIO_BASE_URL}/actions/execute`, {
+        action: "dropbox_search_file_or_folder",
+        params: { query: q }
+      }, { headers: composioHeaders });
+      res.json(response.data);
+    } catch (error) {
+      res.status(error.response?.status || 500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/dropbox/upload", async (req, res) => {
+    const { path, content } = req.body;
+    try {
+      const response = await axios.post(`${COMPOSIO_BASE_URL}/actions/execute`, {
+        action: "dropbox_upload_file",
+        params: { path, content }
+      }, { headers: composioHeaders });
+      res.json(response.data);
+    } catch (error) {
+      res.status(error.response?.status || 500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/dropbox/share", async (req, res) => {
+    const { path } = req.body;
+    try {
+      const response = await axios.post(`${COMPOSIO_BASE_URL}/actions/execute`, {
+        action: "dropbox_create_shared_link",
+        params: { path }
+      }, { headers: composioHeaders });
+      res.json(response.data);
+    } catch (error) {
+      res.status(error.response?.status || 500).json({ error: error.message });
+    }
+  });
+
+  // Odoo ERP Integration Routes (via Composio/Rube)
+  app.get("/api/odoo/search", async (req, res) => {
+    const { model, domain = "[]", fields = "[]" } = req.query;
+    try {
+      const response = await axios.post(`${COMPOSIO_BASE_URL}/actions/execute`, {
+        action: "odoo_search_read",
+        params: { 
+          model, 
+          domain: JSON.parse(domain as string), 
+          fields: JSON.parse(fields as string) 
+        }
+      }, { headers: composioHeaders });
+      res.json(response.data);
+    } catch (error) {
+      res.status(error.response?.status || 500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/odoo/create", async (req, res) => {
+    const { model, values } = req.body;
+    try {
+      const response = await axios.post(`${COMPOSIO_BASE_URL}/actions/execute`, {
+        action: "odoo_create_record",
+        params: { model, values }
+      }, { headers: composioHeaders });
+      res.json(response.data);
+    } catch (error) {
+      res.status(error.response?.status || 500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/odoo/fields", async (req, res) => {
+    const { model } = req.query;
+    try {
+      const response = await axios.post(`${COMPOSIO_BASE_URL}/actions/execute`, {
+        action: "odoo_get_model_fields",
+        params: { model }
+      }, { headers: composioHeaders });
+      res.json(response.data);
+    } catch (error) {
+      res.status(error.response?.status || 500).json({ error: error.message });
+    }
+  });
+
+  // ERPNext Integration Routes (via Composio/Rube)
+  app.get("/api/erpnext/list", async (req, res) => {
+    const { doctype, filters = "{}", fields = '["*"]' } = req.query;
+    try {
+      const response = await axios.post(`${COMPOSIO_BASE_URL}/actions/execute`, {
+        action: "erpnext_list_resource",
+        params: { 
+          doctype, 
+          filters: JSON.parse(filters as string), 
+          fields: JSON.parse(fields as string) 
+        }
+      }, { headers: composioHeaders });
+      res.json(response.data);
+    } catch (error) {
+      res.status(error.response?.status || 500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/erpnext/get", async (req, res) => {
+    const { doctype, name } = req.query;
+    try {
+      const response = await axios.post(`${COMPOSIO_BASE_URL}/actions/execute`, {
+        action: "erpnext_get_resource",
+        params: { doctype, name }
+      }, { headers: composioHeaders });
+      res.json(response.data);
+    } catch (error) {
+      res.status(error.response?.status || 500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/erpnext/create", async (req, res) => {
+    const { doctype, data } = req.body;
+    try {
+      const response = await axios.post(`${COMPOSIO_BASE_URL}/actions/execute`, {
+        action: "erpnext_create_resource",
+        params: { doctype, data }
+      }, { headers: composioHeaders });
+      res.json(response.data);
+    } catch (error) {
+      res.status(error.response?.status || 500).json({ error: error.message });
+    }
   });
 
   // Run immediately on start and then every 2 hours

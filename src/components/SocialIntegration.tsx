@@ -42,6 +42,7 @@ interface OCREntry {
   rawText: string;
   extractedData: any;
   imageUrl: string;
+  sourceUrl?: string;
   status: string;
   createdAt: string;
 }
@@ -63,6 +64,22 @@ export default function SocialIntegration() {
   const [showAddLink, setShowAddLink] = useState(false);
   const [ocrResult, setOcrResult] = useState<any>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [urlInput, setUrlInput] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [lastSource, setLastSource] = useState<{ type: 'image' | 'url'; value: string } | null>(null);
+
+  const selectEntry = (entry: OCREntry) => {
+    setOcrResult(entry.extractedData);
+    if (entry.sourceType === 'image') {
+      setPreviewImage(entry.imageUrl);
+      setLastSource({ type: 'image', value: entry.imageUrl });
+    } else {
+      setPreviewImage(null);
+      setLastSource({ type: 'url', value: entry.sourceUrl || '' });
+    }
+    // Scroll to top of OCR section or just let the user see it
+    window.scrollTo({ top: 400, behavior: 'smooth' });
+  };
 
   useEffect(() => {
     fetchLinks();
@@ -129,7 +146,7 @@ export default function SocialIntegration() {
         contents: [
           {
             parts: [
-              { text: "Extract data from this social media message/screenshot. Look for transaction details, amounts, dates, vendor names, or tax-related info. Return as JSON with fields: amount (number), date (ISO string), vendor (string), description (string), type (vat/tax/other)." },
+              { text: "Extract data from this social media message/screenshot. Extract all relevant text and identify key entities (people, organizations, locations, dates, amounts). Look for transaction details, amounts, dates, vendor names, or tax-related info. Return as JSON with fields: rawText (string), entities (array of {name, type, context}), amount (number), date (ISO string), vendor (string), description (string), type (vat/tax/other)." },
               { inlineData: { mimeType: "image/png", data: base64Image.split(',')[1] } }
             ]
           }
@@ -141,23 +158,64 @@ export default function SocialIntegration() {
 
       const data = JSON.parse(response.text || '{}');
       setOcrResult(data);
-
-      // Save to history
-      await fetch('/api/social/ocr', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          rawText: response.text,
-          extractedData: data,
-          imageUrl: base64Image.slice(0, 1000), // In a real app, upload to storage
-          sourceType: 'social_media'
-        }),
-      });
-      fetchOcrEntries();
+      setLastSource({ type: 'image', value: base64Image });
     } catch (err) {
       console.error("OCR failed", err);
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  const processURLOCR = async () => {
+    if (!urlInput) return;
+    setIsProcessing(true);
+    setOcrResult(null);
+    setPreviewImage(null);
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
+      const model = "gemini-3-flash-preview";
+      
+      const response = await ai.models.generateContent({
+        model,
+        contents: `Analyze this social media URL: ${urlInput}. Extract all relevant text and identify key entities (people, organizations, locations, dates, amounts). Look for transaction details, amounts, dates, vendor names, or tax-related info. Return as JSON with fields: rawText (string), entities (array of {name, type, context}), amount (number), date (ISO string), vendor (string), description (string), type (vat/tax/other).`,
+        config: {
+          tools: [{ urlContext: {} }],
+          responseMimeType: "application/json"
+        }
+      });
+
+      const data = JSON.parse(response.text || '{}');
+      setOcrResult(data);
+      setLastSource({ type: 'url', value: urlInput });
+      setUrlInput('');
+    } catch (err) {
+      console.error("URL OCR failed", err);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const saveToHistory = async () => {
+    if (!ocrResult || !lastSource) return;
+    setIsSaving(true);
+    try {
+      await fetch('/api/social/ocr', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          rawText: ocrResult.rawText || JSON.stringify(ocrResult),
+          extractedData: ocrResult,
+          imageUrl: lastSource.type === 'image' ? lastSource.value : null,
+          sourceUrl: lastSource.type === 'url' ? lastSource.value : null,
+          sourceType: lastSource.type
+        }),
+      });
+      fetchOcrEntries();
+      alert('Saved to OCR history!');
+    } catch (err) {
+      console.error("Save to history failed", err);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -297,36 +355,64 @@ export default function SocialIntegration() {
             <h2 className="text-2xl font-black tracking-tight flex items-center gap-2">
               <MessageSquare className="text-brand-500" /> Message OCR
             </h2>
-            <p className="text-sm text-zinc-500">Extract data from social media screenshots or messages</p>
+            <p className="text-sm text-zinc-500">Extract data from social media screenshots or URLs</p>
           </div>
 
-          <div 
-            {...getRootProps()} 
-            className={cn(
-              "relative aspect-video rounded-3xl border-2 border-dashed transition-all flex flex-col items-center justify-center p-8 text-center cursor-pointer",
-              isDragActive ? "border-brand-500 bg-brand-50/50" : "border-zinc-200 hover:border-zinc-300 bg-zinc-50/50",
-              previewImage && "border-none p-0 overflow-hidden"
-            )}
-          >
-            <input {...getInputProps()} />
-            {previewImage ? (
-              <>
-                <img src={previewImage} alt="Preview" className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <p className="text-white font-bold flex items-center gap-2">
-                    <Upload size={20} /> Change Image
-                  </p>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center text-zinc-400 shadow-sm mb-4">
-                  <ImageIcon size={32} />
-                </div>
-                <p className="text-sm font-bold text-zinc-900 mb-1">Drop screenshot here</p>
-                <p className="text-xs text-zinc-500">or click to browse files</p>
-              </>
-            )}
+          <div className="space-y-6">
+            <div className="flex gap-2">
+              <input 
+                type="url"
+                placeholder="Paste social media URL here..."
+                value={urlInput}
+                onChange={(e) => setUrlInput(e.target.value)}
+                className="flex-1 p-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-500/20 outline-none"
+              />
+              <button 
+                onClick={processURLOCR}
+                disabled={!urlInput || isProcessing}
+                className="px-6 bg-zinc-900 text-white rounded-xl font-bold hover:bg-zinc-800 transition-all disabled:opacity-50"
+              >
+                Analyze URL
+              </button>
+            </div>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-zinc-100"></span>
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-white px-2 text-zinc-400 font-bold">Or Upload Image</span>
+              </div>
+            </div>
+
+            <div 
+              {...getRootProps()} 
+              className={cn(
+                "relative aspect-video rounded-3xl border-2 border-dashed transition-all flex flex-col items-center justify-center p-8 text-center cursor-pointer",
+                isDragActive ? "border-brand-500 bg-brand-50/50" : "border-zinc-200 hover:border-zinc-300 bg-zinc-50/50",
+                previewImage && "border-none p-0 overflow-hidden"
+              )}
+            >
+              <input {...getInputProps()} />
+              {previewImage ? (
+                <>
+                  <img src={previewImage} alt="Preview" className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <p className="text-white font-bold flex items-center gap-2">
+                      <Upload size={20} /> Change Image
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center text-zinc-400 shadow-sm mb-4">
+                    <ImageIcon size={32} />
+                  </div>
+                  <p className="text-sm font-bold text-zinc-900 mb-1">Drop screenshot here</p>
+                  <p className="text-xs text-zinc-500">or click to browse files</p>
+                </>
+              )}
+            </div>
           </div>
 
           <AnimatePresence>
@@ -365,6 +451,18 @@ export default function SocialIntegration() {
                       <p className="text-[10px] font-bold text-emerald-600 uppercase">Vendor/Source</p>
                       <p className="text-sm font-bold text-emerald-900">{ocrResult.vendor || 'N/A'}</p>
                     </div>
+                    {ocrResult.entities && ocrResult.entities.length > 0 && (
+                      <div className="col-span-2 space-y-2">
+                        <p className="text-[10px] font-bold text-emerald-600 uppercase">Identified Entities</p>
+                        <div className="flex flex-wrap gap-2">
+                          {ocrResult.entities.map((ent: any, i: number) => (
+                            <span key={i} className="px-2 py-1 bg-white/50 rounded-lg text-[10px] font-bold text-emerald-700 border border-emerald-100" title={ent.context}>
+                              {ent.name} ({ent.type})
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                     <div className="col-span-2 space-y-1">
                       <p className="text-[10px] font-bold text-emerald-600 uppercase">Description</p>
                       <p className="text-xs text-emerald-800">{ocrResult.description || 'No description extracted.'}</p>
@@ -372,12 +470,20 @@ export default function SocialIntegration() {
                   </div>
                 </div>
 
-                <div className="flex gap-3">
+                <div className="flex flex-wrap gap-3">
+                  <button 
+                    onClick={saveToHistory}
+                    disabled={isSaving}
+                    className="flex-1 py-3 bg-emerald-600 text-white rounded-xl text-sm font-bold hover:bg-emerald-700 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />} 
+                    Save to History
+                  </button>
                   <button 
                     onClick={() => saveToRecords('vat')}
                     className="flex-1 py-3 bg-zinc-900 text-white rounded-xl text-sm font-bold hover:bg-zinc-800 transition-all flex items-center justify-center gap-2"
                   >
-                    <Save size={18} /> Entry to VAT
+                    <ArrowRight size={18} /> Entry to VAT
                   </button>
                   <button 
                     onClick={() => saveToRecords('tax')}
@@ -401,11 +507,22 @@ export default function SocialIntegration() {
 
           <div className="flex-1 space-y-4 overflow-y-auto max-h-[500px] pr-2 custom-scrollbar">
             {ocrEntries.map(entry => (
-              <div key={entry.id} className="p-4 bg-zinc-50 rounded-2xl border border-zinc-100 hover:bg-white transition-all">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-[10px] font-black px-2 py-0.5 bg-zinc-200 text-zinc-600 rounded-full uppercase">
-                    {entry.sourceType.replace('_', ' ')}
-                  </span>
+              <div 
+                key={entry.id} 
+                onClick={() => selectEntry(entry)}
+                className="p-4 bg-zinc-50 rounded-2xl border border-zinc-100 hover:border-brand-200 hover:bg-white transition-all cursor-pointer"
+              >
+                  <div className="flex items-center justify-between mb-2">
+                  <div className="flex gap-2">
+                    <span className="text-[10px] font-black px-2 py-0.5 bg-zinc-200 text-zinc-600 rounded-full uppercase">
+                      {entry.sourceType.replace('_', ' ')}
+                    </span>
+                    {entry.sourceUrl && (
+                      <a href={entry.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-[10px] text-brand-600 hover:underline flex items-center gap-1">
+                        View Source <ExternalLink size={8} />
+                      </a>
+                    )}
+                  </div>
                   <span className="text-[10px] text-zinc-400">
                     {new Date(entry.createdAt).toLocaleDateString()}
                   </span>

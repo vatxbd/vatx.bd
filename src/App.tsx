@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { GoogleGenAI } from "@google/genai";
 import { 
   Calculator, 
+  Calendar,
   Receipt, 
   TrendingUp, 
   History, 
@@ -14,7 +15,9 @@ import {
   BarChart3,
   Percent,
   DollarSign,
+  Heart,
   Briefcase,
+  Database,
   User,
   Building2,
   ArrowRight,
@@ -24,8 +27,11 @@ import {
   Ship,
   Search,
   Shield,
+  Smartphone,
   Book,
   Share2,
+  Twitter,
+  Folder,
   AlertCircle,
   CheckCircle2,
   Sparkles,
@@ -45,6 +51,9 @@ import {
   Users,
   Bell,
   ExternalLink,
+  Code,
+  Github,
+  Lock,
   X,
   ChevronDown,
   ChevronUp,
@@ -60,7 +69,6 @@ import {
   Upload,
   File,
   Loader2,
-  Lock,
   Menu,
   Languages,
   Filter,
@@ -72,6 +80,7 @@ import {
 import { useDropzone } from 'react-dropzone';
 import { motion, AnimatePresence } from 'motion/react';
 import { translations, Language } from './translations';
+import { QRCodeSVG } from 'qrcode.react';
 import { 
   BarChart, 
   Bar, 
@@ -87,9 +96,19 @@ import {
   Area
 } from 'recharts';
 import Mushak91Form from './components/Mushak91Form';
+import DonationCentre from './components/DonationCentre';
 import SocialIntegration from './components/SocialIntegration';
+import BaseManager from './components/BaseManager';
+import XScraper from './components/XScraper';
+import WhatsAppAutomation from './components/WhatsAppAutomation';
+import OdooAccounting from './components/OdooAccounting';
+import DropboxManager from './components/DropboxManager';
+import OdooIntegration from './components/OdooIntegration';
+import ERPNextIntegration from './components/ERPNextIntegration';
+import VatAgentPortal from './components/VatAgentPortal';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import Markdown from 'react-markdown';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -166,7 +185,14 @@ function SectionGuide({ title, steps, language = 'bn' }: { title: string, steps:
   );
 }
 
-type Tab = 'dashboard' | 'vat' | 'tax' | 'tariff' | 'manifest' | 'reports' | 'blog' | 'tools' | 'ai' | 'invoice' | 'history' | 'notices' | 'rebate' | 'hscode' | 'subscription' | 'crypto-tax' | 'blockchain-verify' | 'tokenized-cert' | 'tax-advisory' | 'zakat' | 'final-tax' | 'developer' | 'documents' | 'critical-vat' | 'help' | 'social';
+import LiveAgent from './components/LiveAgent';
+import VDSTracker from './components/VDSTracker';
+import ComplianceCalendar from './components/ComplianceCalendar';
+import AgentMarketplace from './components/AgentMarketplace';
+import ChallanVerification from './components/ChallanVerification';
+import MFSPayment from './components/MFSPayment';
+
+type Tab = 'dashboard' | 'vat' | 'tax' | 'tariff' | 'manifest' | 'reports' | 'blog' | 'tools' | 'ai' | 'invoice' | 'history' | 'notices' | 'rebate' | 'hscode' | 'subscription' | 'crypto-tax' | 'blockchain-verify' | 'tokenized-cert' | 'tax-advisory' | 'zakat' | 'final-tax' | 'developer' | 'documents' | 'critical-vat' | 'help' | 'social' | 'base' | 'x-scraper' | 'whatsapp' | 'odoo' | 'dropbox' | 'odoo-erp' | 'erpnext' | 'vat-agents' | 'live-agent' | 'donation' | 'vds-tracker' | 'compliance-calendar' | 'agent-marketplace' | 'challan-verify' | 'mfs-payment';
 
 interface TaxNotice {
   id: number;
@@ -189,6 +215,19 @@ export default function App() {
   const [isSearching, setIsSearching] = useState(false);
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showLiveAgent, setShowLiveAgent] = useState(false);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   const [isDeveloper, setIsDeveloper] = useState(false);
   const [logoClicks, setLogoClicks] = useState(0);
@@ -264,8 +303,14 @@ export default function App() {
       const taxData = await taxRes.json();
       setVatHistory(vatData);
       setTaxHistory(taxData);
+      localStorage.setItem('vatHistory', JSON.stringify(vatData));
+      localStorage.setItem('taxHistory', JSON.stringify(taxData));
     } catch (err) {
       console.error('Failed to fetch history', err);
+      const cachedVat = localStorage.getItem('vatHistory');
+      const cachedTax = localStorage.getItem('taxHistory');
+      if (cachedVat) setVatHistory(JSON.parse(cachedVat));
+      if (cachedTax) setTaxHistory(JSON.parse(cachedTax));
     }
   };
 
@@ -343,6 +388,13 @@ export default function App() {
                       <NavItem icon={<Receipt size={18} />} label="VAT Calculator" active={activeTab === 'vat'} onClick={() => { setActiveTab('vat'); setIsMobileMenuOpen(false); }} />
                       <NavItem icon={<Calculator size={18} />} label="Tax Calculator" active={activeTab === 'tax'} onClick={() => { setActiveTab('tax'); setIsMobileMenuOpen(false); }} />
                       <NavItem icon={<Share2 size={18} />} label="Social Integration" active={activeTab === 'social'} onClick={() => { setActiveTab('social'); setIsMobileMenuOpen(false); }} />
+                      <NavItem icon={<Twitter size={18} />} label="X Intelligence" active={activeTab === 'x-scraper'} onClick={() => { setActiveTab('x-scraper'); setIsMobileMenuOpen(false); }} />
+                      <NavItem icon={<MessageSquare size={18} />} label="WhatsApp Automation" active={activeTab === 'whatsapp'} onClick={() => { setActiveTab('whatsapp'); setIsMobileMenuOpen(false); }} />
+                      <NavItem icon={<Settings size={18} />} label="Odoo Setup" active={activeTab === 'odoo'} onClick={() => { setActiveTab('odoo'); setIsMobileMenuOpen(false); }} />
+                      <NavItem icon={<Folder size={18} />} label="Dropbox Cloud" active={activeTab === 'dropbox'} onClick={() => { setActiveTab('dropbox'); setIsMobileMenuOpen(false); }} />
+                      <NavItem icon={<Database size={18} />} label="Odoo ERP Integration" active={activeTab === 'odoo-erp'} onClick={() => { setActiveTab('odoo-erp'); setIsMobileMenuOpen(false); }} />
+                      <NavItem icon={<Cpu size={18} />} label="ERPNext Automation" active={activeTab === 'erpnext'} onClick={() => { setActiveTab('erpnext'); setIsMobileMenuOpen(false); }} />
+                      <NavItem icon={<Building2 size={18} />} label={t.vatAgents} active={activeTab === 'vat-agents'} onClick={() => { setActiveTab('vat-agents'); setIsMobileMenuOpen(false); }} />
                       <NavItem icon={<Shield size={18} />} label="চূড়ান্ত ট্যাক্স ক্যালকুলেশন" active={activeTab === 'final-tax'} onClick={() => { setActiveTab('final-tax'); setIsMobileMenuOpen(false); }} />
                     </div>
                   </div>
@@ -361,6 +413,7 @@ export default function App() {
                       <NavItem icon={<Ship size={18} />} label="Tariff Calculator" active={activeTab === 'tariff'} onClick={() => { setActiveTab('tariff'); setIsMobileMenuOpen(false); }} />
                       <NavItem icon={<ClipboardCheck size={18} />} label="Manifest & Cargo" active={activeTab === 'manifest'} onClick={() => { setActiveTab('manifest'); setIsMobileMenuOpen(false); }} />
                       <NavItem icon={<Receipt size={18} />} label="Invoice Generator" active={activeTab === 'invoice'} onClick={() => { setActiveTab('invoice'); setIsMobileMenuOpen(false); }} />
+                      <NavItem icon={<Database size={18} />} label="Base (Database)" active={activeTab === 'base'} onClick={() => { setActiveTab('base'); setIsMobileMenuOpen(false); }} />
                     </div>
                   </div>
                   <div>
@@ -383,13 +436,13 @@ export default function App() {
           <BarChart3 size={22} />
           <span className="text-[10px] font-bold">Home</span>
         </button>
-        <button onClick={() => setActiveTab('vat')} className={cn("mobile-nav-item", activeTab === 'vat' && "active")}>
-          <Receipt size={22} />
-          <span className="text-[10px] font-bold">VAT</span>
+        <button onClick={() => setShowLiveAgent(true)} className={cn("mobile-nav-item", showLiveAgent && "active")}>
+          <Bot size={22} className="text-indigo-500" />
+          <span className="text-[10px] font-bold">Live</span>
         </button>
         <button onClick={() => setActiveTab('ai')} className={cn("mobile-nav-item", activeTab === 'ai' && "active")}>
           <div className="w-12 h-12 bg-brand-600 rounded-full flex items-center justify-center text-white -mt-8 shadow-lg shadow-brand-600/30 border-4 border-white">
-            <Bot size={24} />
+            <Sparkles size={24} />
           </div>
           <span className="text-[10px] font-bold">AI Bot</span>
         </button>
@@ -463,10 +516,92 @@ export default function App() {
               onClick={() => setActiveTab('social')} 
             />
             <NavItem 
+              icon={<Twitter size={18} />} 
+              label="X Intelligence" 
+              active={activeTab === 'x-scraper'} 
+              onClick={() => setActiveTab('x-scraper')} 
+            />
+            <NavItem 
+              icon={<MessageSquare size={18} />} 
+              label="WhatsApp Automation" 
+              active={activeTab === 'whatsapp'} 
+              onClick={() => setActiveTab('whatsapp')} 
+            />
+            <NavItem 
+              icon={<Settings size={18} />} 
+              label="Odoo Setup" 
+              active={activeTab === 'odoo'} 
+              onClick={() => setActiveTab('odoo')} 
+            />
+            <NavItem 
+              icon={<Folder size={18} />} 
+              label="Dropbox Cloud" 
+              active={activeTab === 'dropbox'} 
+              onClick={() => setActiveTab('dropbox')} 
+            />
+            <NavItem 
+              icon={<Database size={18} />} 
+              label="Odoo ERP Integration" 
+              active={activeTab === 'odoo-erp'} 
+              onClick={() => setActiveTab('odoo-erp')} 
+            />
+            <NavItem 
+              icon={<Cpu size={18} />} 
+              label="ERPNext Automation" 
+              active={activeTab === 'erpnext'} 
+              onClick={() => setActiveTab('erpnext')} 
+            />
+            <NavItem 
+              icon={<Building2 size={18} />} 
+              label={t.vatAgents} 
+              active={activeTab === 'vat-agents'} 
+              onClick={() => setActiveTab('vat-agents')} 
+            />
+            <NavItem 
               icon={<Shield size={18} />} 
               label="চূড়ান্ত ট্যাক্স ক্যালকুলেশন" 
               active={activeTab === 'final-tax'} 
               onClick={() => setActiveTab('final-tax')} 
+            />
+            <NavItem 
+              icon={<Code size={18} />} 
+              label="Open Source & Dev" 
+              active={activeTab === 'developer'} 
+              onClick={() => setActiveTab('developer')} 
+            />
+          </div>
+
+          <div className="py-4 border-t border-zinc-50">
+            <p className="px-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-4">Compliance</p>
+            <NavItem 
+              icon={<ClipboardCheck size={18} />} 
+              label="VDS Tracker" 
+              active={activeTab === 'vds-tracker'} 
+              onClick={() => setActiveTab('vds-tracker')} 
+            />
+            <NavItem 
+              icon={<Calendar size={18} />} 
+              label="Compliance Calendar" 
+              active={activeTab === 'compliance-calendar'} 
+              onClick={() => setActiveTab('compliance-calendar')} 
+            />
+            <NavItem 
+              icon={<Users size={18} />} 
+              label="Agent Marketplace" 
+              active={activeTab === 'agent-marketplace'} 
+              onClick={() => setActiveTab('agent-marketplace')} 
+            />
+            <NavItem 
+              icon={<ShieldCheck size={18} />} 
+              label="Challan Verify" 
+              active={activeTab === 'challan-verify'} 
+              onClick={() => setActiveTab('challan-verify')} 
+            />
+            <NavItem 
+              icon={<Smartphone size={18} />} 
+              label={t['mfs-payment'] || "MFS Payment"} 
+              active={activeTab === 'mfs-payment'} 
+              onClick={() => setActiveTab('mfs-payment')} 
             />
           </div>
 
@@ -490,6 +625,12 @@ export default function App() {
               active={activeTab === 'invoice'} 
               onClick={() => setActiveTab('invoice')} 
             />
+            <NavItem 
+              icon={<Database size={18} />} 
+              label={t.base} 
+              active={activeTab === 'base'} 
+              onClick={() => setActiveTab('base')} 
+            />
           </div>
 
           <div className="py-4 border-t border-zinc-50">
@@ -499,6 +640,12 @@ export default function App() {
               label={t.ai} 
               active={activeTab === 'ai'} 
               onClick={() => setActiveTab('ai')} 
+            />
+            <NavItem 
+              icon={<Bot size={18} className="text-indigo-500" />} 
+              label="Gemini Live" 
+              active={showLiveAgent} 
+              onClick={() => setShowLiveAgent(true)} 
             />
             <NavItem 
               icon={<TrendingUp size={18} />} 
@@ -545,6 +692,12 @@ export default function App() {
               label={t.notices} 
               active={activeTab === 'notices'} 
               onClick={() => setActiveTab('notices')} 
+            />
+            <NavItem 
+              icon={<Heart size={18} />} 
+              label="Donation Centre" 
+              active={activeTab === 'donation'} 
+              onClick={() => setActiveTab('donation')} 
             />
             <NavItem 
               icon={<History size={18} />} 
@@ -603,6 +756,13 @@ export default function App() {
         </div>
       </aside>
 
+      {/* Live Agent Overlay */}
+      <AnimatePresence>
+        {showLiveAgent && (
+          <LiveAgent onClose={() => setShowLiveAgent(false)} />
+        )}
+      </AnimatePresence>
+
       {/* Main Content */}
       <main className="md:ml-72 p-6 md:p-8 lg:p-12 min-h-screen pt-24 md:pt-12">
         <header className="flex flex-col lg:flex-row justify-between lg:items-center gap-6 mb-12 hidden md:flex">
@@ -617,6 +777,13 @@ export default function App() {
           </div>
           
           <div className="flex items-center gap-4">
+            <div className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider border",
+              isOnline ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-red-50 text-red-700 border-red-100"
+            )}>
+              <div className={cn("w-2 h-2 rounded-full animate-pulse", isOnline ? "bg-emerald-500" : "bg-red-500")} />
+              {isOnline ? (language === 'bn' ? 'অনলাইন' : 'Online') : (language === 'bn' ? 'অফলাইন' : 'Offline')}
+            </div>
             <div className="relative w-full lg:w-96 group">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 group-focus-within:text-brand-500 transition-colors" size={18} />
               <input 
@@ -771,13 +938,14 @@ export default function App() {
             transition={{ duration: 0.2 }}
           >
             {activeTab === 'dashboard' && <Dashboard vatHistory={vatHistory} taxHistory={taxHistory} t={t} notices={notices} language={language} />}
+            {activeTab === 'vat-agents' && <VatAgentPortal />}
             {activeTab === 'vat' && <VATCalculator onComplete={fetchHistory} />}
             {activeTab === 'tax' && <TaxCalculator onComplete={fetchHistory} />}
             {activeTab === 'tariff' && <TariffCalculator />}
             {activeTab === 'rebate' && <TaxRebatePlanner />}
             {activeTab === 'hscode' && <HSCodeFinder />}
-            {activeTab === 'manifest' && <ManifestView />}
-            {activeTab === 'reports' && <ReportsView vatHistory={vatHistory} taxHistory={taxHistory} />}
+            {activeTab === 'manifest' && <ManifestView t={t} />}
+            {activeTab === 'reports' && <ReportsView vatHistory={vatHistory} taxHistory={taxHistory} t={t} />}
             {activeTab === 'ai' && <AIAssistant />}
             {activeTab === 'invoice' && <InvoiceGenerator />}
             {activeTab === 'blog' && <BlogView />}
@@ -793,9 +961,22 @@ export default function App() {
             {activeTab === 'final-tax' && <FinalTaxCalculator />}
             {activeTab === 'zakat' && <ZakatCalculator />}
             {activeTab === 'critical-vat' && <Mushak91Form />}
-            {activeTab === 'developer' && isDeveloper && <DeveloperPanel notices={notices} setNotices={setNotices} />}
+            {activeTab === 'developer' && <DeveloperPanel notices={notices} setNotices={setNotices} />}
             {activeTab === 'documents' && <DocumentCentre language={language} />}
             {activeTab === 'social' && <SocialIntegration />}
+            {activeTab === 'base' && <BaseManager />}
+            {activeTab === 'x-scraper' && <XScraper />}
+            {activeTab === 'whatsapp' && <WhatsAppAutomation />}
+            {activeTab === 'odoo' && <OdooAccounting language={language} />}
+            {activeTab === 'dropbox' && <DropboxManager />}
+            {activeTab === 'odoo-erp' && <OdooIntegration />}
+            {activeTab === 'erpnext' && <ERPNextIntegration />}
+            {activeTab === 'donation' && <DonationCentre />}
+            {activeTab === 'vds-tracker' && <VDSTracker />}
+            {activeTab === 'compliance-calendar' && <ComplianceCalendar />}
+            {activeTab === 'agent-marketplace' && <AgentMarketplace />}
+            {activeTab === 'challan-verify' && <ChallanVerification />}
+            {activeTab === 'mfs-payment' && <MFSPayment />}
           </motion.div>
         </AnimatePresence>
       </main>
@@ -840,16 +1021,54 @@ function NavItem({ icon, label, active, onClick }: { icon: React.ReactNode, labe
 }
 
 function DocumentCentre({ language }: { language: Language }) {
+  const t = translations[language];
   const [files, setFiles] = useState<{ 
     file: File; 
+    previewUrl?: string;
     ocrResult?: string; 
     structuredData?: any;
-    status: 'idle' | 'uploading' | 'processing' | 'done' | 'error' 
+    status: 'idle' | 'uploading' | 'processing' | 'done' | 'error';
+    progress?: number;
+    analysisStep?: string;
   }[]>([]);
   const [activeFileIndex, setActiveFileIndex] = useState<number | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const copyToClipboard = async (text: string) => {
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } else {
+        throw new Error('Clipboard API unavailable');
+      }
+    } catch (err) {
+      const textArea = document.createElement("textarea");
+      textArea.value = text;
+      textArea.style.position = "fixed";
+      textArea.style.left = "-9999px";
+      textArea.style.top = "0";
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch (err) {
+        console.error('Fallback copy failed', err);
+      }
+      document.body.removeChild(textArea);
+    }
+  };
 
   const onDrop = (acceptedFiles: File[]) => {
-    const newFiles = acceptedFiles.map(file => ({ file, status: 'idle' as const }));
+    const newFiles = acceptedFiles.map(file => ({ 
+      file, 
+      status: 'idle' as const,
+      previewUrl: URL.createObjectURL(file)
+    }));
     setFiles(prev => [...prev, ...newFiles]);
   };
 
@@ -863,11 +1082,16 @@ function DocumentCentre({ language }: { language: Language }) {
 
   const processOCR = async (index: number) => {
     const fileData = files[index];
-    if (!fileData || fileData.status === 'processing') return;
+    if (!fileData) return;
+    
+    setActiveFileIndex(index);
+    if (fileData.status === 'processing' || fileData.status === 'done') return;
 
     setFiles(prev => {
       const next = [...prev];
       next[index].status = 'processing';
+      next[index].progress = 10;
+      next[index].analysisStep = t.stepReading;
       return next;
     });
     setActiveFileIndex(index);
@@ -883,7 +1107,22 @@ function DocumentCentre({ language }: { language: Language }) {
       reader.readAsDataURL(fileData.file);
       const base64 = await base64Promise;
 
+      setFiles(prev => {
+        const next = [...prev];
+        next[index].progress = 30;
+        next[index].analysisStep = t.stepUploading;
+        return next;
+      });
+
       const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
+      
+      setFiles(prev => {
+        const next = [...prev];
+        next[index].progress = 60;
+        next[index].analysisStep = t.stepExtracting;
+        return next;
+      });
+
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
         contents: [
@@ -896,19 +1135,26 @@ function DocumentCentre({ language }: { language: Language }) {
           {
             text: `Extract structured data from this document for Bangladesh Tax (NBR) filing. 
             Focus on: 
-            1. Document Type (Invoice, Mushak 6.3, Salary Certificate, Bank Statement, Tax Certificate)
+            1. Document Type (Invoice, Mushak 6.3, Salary Certificate, Bank Statement, Tax Certificate, TDS Certificate)
             2. TIN/BIN numbers
             3. Total Amount (BDT)
             4. Tax/VAT Amount
             5. Date of Issue
-            6. Vendor/Company Name
+            6. Vendor/Company Name (Depositing Authority)
             7. Address
             8. Taxpayer Name
             9. Assessment Year
             10. Income Components (Salary, House Rent, Business)
             11. Investment Amount (for rebate)
+            12. Relevant Entities (Extracted names of people, organizations, locations, or other key entities mentioned in the document)
+            13. Table of Deposits/Challans (if present):
+                - Month
+                - Claimed Amount (Tax relating to this certificate)
+                - Challan Amount (Total amount in challan)
+                - Challan No
+                - Date
             
-            Return the data in a clean JSON format suitable for individual tax return (IT-11GA) form automation.`
+            Return the data in a clean JSON format suitable for individual tax return (IT-11GA) and Source Tax Ledger (ledger.etaxnbr.gov.bd) automation.`
           }
         ],
         config: {
@@ -931,17 +1177,50 @@ function DocumentCentre({ language }: { language: Language }) {
               investmentAmount: { type: "number" },
               currency: { type: "string" },
               summary: { type: "string" },
-              confidence: { type: "number" }
+              confidence: { type: "number" },
+              entities: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    name: { type: "string" },
+                    type: { type: "string" },
+                    relevance: { type: "string" }
+                  },
+                  required: ["name", "type"]
+                }
+              },
+              challans: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    month: { type: "string" },
+                    claimedAmount: { type: "number" },
+                    challanAmount: { type: "number" },
+                    challanNo: { type: "string" },
+                    date: { type: "string" }
+                  }
+                }
+              }
             },
             required: ["documentType"]
           }
         }
       });
 
+      setFiles(prev => {
+        const next = [...prev];
+        next[index].progress = 90;
+        next[index].analysisStep = t.stepFinalizing;
+        return next;
+      });
+
       const structuredData = JSON.parse(response.text || "{}");
       setFiles(prev => {
         const next = [...prev];
         next[index].status = 'done';
+        next[index].progress = 100;
         next[index].structuredData = structuredData;
         next[index].ocrResult = response.text;
         return next;
@@ -958,6 +1237,96 @@ function DocumentCentre({ language }: { language: Language }) {
 
   const generateNBRScript = (data: any) => {
     if (!data) return "";
+    
+    // Check if it's a Salary Ledger automation request
+    const isSalaryLedger = data.challans && data.challans.length > 0;
+    
+    if (isSalaryLedger) {
+      return `
+/**
+ * VATX.BD - NBR Salary Ledger Auto-Fill Helper
+ * Target: https://ledger.etaxnbr.gov.bd/#/pages/source-tax/private-salary
+ */
+(function() {
+  const data = ${JSON.stringify(data, null, 2)};
+  const challans = data.challans;
+  let currentIndex = 0;
+  
+  console.log("%c VATX.BD Salary Ledger Automation Active ", "background: #10b981; color: white; font-weight: bold; padding: 4px;");
+
+  // Create UI
+  const container = document.createElement('div');
+  container.id = 'vatx-helper';
+  Object.assign(container.style, {
+    position: 'fixed',
+    bottom: '20px',
+    right: '20px',
+    zIndex: '9999',
+    background: '#ffffff',
+    padding: '20px',
+    borderRadius: '16px',
+    boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+    border: '1px solid #e5e7eb',
+    fontFamily: 'sans-serif',
+    width: '300px'
+  });
+
+  const render = () => {
+    const c = challans[currentIndex];
+    container.innerHTML = \`
+      <div style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-weight: 800; font-size: 14px; color: #111827;">VATX.BD Helper</span>
+        <span style="font-size: 10px; color: #6b7280; font-weight: bold;">\${currentIndex + 1} / \${challans.length}</span>
+      </div>
+      <div style="background: #f9fafb; padding: 12px; border-radius: 12px; margin-bottom: 16px; border: 1px solid #f3f4f6;">
+        <div style="font-size: 12px; font-weight: 800; color: #10b981;">\${c.month}</div>
+        <div style="font-size: 10px; color: #6b7280; margin-top: 4px;">Challan: \${c.challanNo}</div>
+        <div style="font-size: 10px; color: #6b7280;">Amount: ৳\${c.claimedAmount}</div>
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <button id="vatx-prev" style="flex: 1; padding: 8px; border-radius: 8px; border: 1px solid #e5e7eb; background: white; cursor: pointer; font-size: 12px;">Prev</button>
+        <button id="vatx-fill" style="flex: 2; padding: 8px; border-radius: 8px; border: none; background: #10b981; color: white; cursor: pointer; font-weight: bold; font-size: 12px;">Fill Form</button>
+        <button id="vatx-next" style="flex: 1; padding: 8px; border-radius: 8px; border: 1px solid #e5e7eb; background: white; cursor: pointer; font-size: 12px;">Next</button>
+      </div>
+      <button id="vatx-close" style="width: 100%; margin-top: 8px; padding: 4px; background: transparent; border: none; color: #9ca3af; font-size: 10px; cursor: pointer;">Close Helper</button>
+    \`;
+
+    document.getElementById('vatx-prev').onclick = () => { if(currentIndex > 0) { currentIndex--; render(); } };
+    document.getElementById('vatx-next').onclick = () => { if(currentIndex < challans.length - 1) { currentIndex++; render(); } };
+    document.getElementById('vatx-close').onclick = () => container.remove();
+    document.getElementById('vatx-fill').onclick = () => {
+      const fillInput = (placeholder, value) => {
+        const inputs = Array.from(document.querySelectorAll('input'));
+        const input = inputs.find(i => i.placeholder && i.placeholder.toLowerCase().includes(placeholder.toLowerCase()));
+        if (input) {
+          input.value = value;
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+          input.dispatchEvent(new Event('change', { bubbles: true }));
+          return true;
+        }
+        return false;
+      };
+
+      fillInput("Depositing Authority", data.vendorName || "");
+      fillInput("Reference No.", data.tin || "");
+      fillInput("Challan No.", c.challanNo || "");
+      fillInput("Challan Amount", c.challanAmount || "");
+      fillInput("Claimed Amount", c.claimedAmount || "");
+      
+      const dateInputs = Array.from(document.querySelectorAll('input[placeholder="Enter Date"]'));
+      if (dateInputs[0]) { dateInputs[0].value = c.date || ""; dateInputs[0].dispatchEvent(new Event('input', { bubbles: true })); }
+      if (dateInputs[1]) { dateInputs[1].value = c.date || ""; dateInputs[1].dispatchEvent(new Event('input', { bubbles: true })); }
+      
+      console.log("Filled data for " + c.month);
+    };
+  };
+
+  document.body.appendChild(container);
+  render();
+})();
+      `.trim();
+    }
+
     return `
 /**
  * VATX.BD - NBR TRMS Individual Tax Auto-Fill
@@ -1028,6 +1397,7 @@ function DocumentCentre({ language }: { language: Language }) {
         title="স্মার্ট ওসিআর ও এনবিআর (NBR) অটোমেশন গাইড"
         steps={[
           "আপনার ডকুমেন্ট আপলোড করুন (Invoice, Mushak 6.3, Salary Certificate)।",
+          "ডকুমেন্টটি নির্বাচন করুন এবং 'AI Analyze' বাটনে ক্লিক করুন।",
           "এআই স্বয়ংক্রিয়ভাবে এনবিআর পোর্টালের জন্য প্রয়োজনীয় তথ্য সংগ্রহ করবে।",
           "তথ্য যাচাই করে 'Generate NBR Script' বাটনে ক্লিক করুন।",
           "এনবিআর পোর্টালে (trms.nbr.gov.bd) গিয়ে ব্রাউজার কনসোলে স্ক্রিপ্টটি পেস্ট করুন।"
@@ -1059,7 +1429,7 @@ function DocumentCentre({ language }: { language: Language }) {
               {files.map((f, i) => (
                 <div 
                   key={i} 
-                  onClick={() => processOCR(i)}
+                  onClick={() => setActiveFileIndex(i)}
                   className={cn(
                     "p-4 rounded-2xl border transition-all cursor-pointer flex items-center gap-3",
                     activeFileIndex === i ? "border-brand-500 ring-2 ring-brand-500/10" : "border-zinc-100",
@@ -1078,6 +1448,18 @@ function DocumentCentre({ language }: { language: Language }) {
                       {(f.file.size / 1024 / 1024).toFixed(2)} MB • {f.status}
                     </p>
                   </div>
+                  {f.status === 'idle' && (
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        processOCR(i);
+                      }}
+                      className="p-2 bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition-all"
+                      title="AI Analyze"
+                    >
+                      <Zap size={14} />
+                    </button>
+                  )}
                   {f.status === 'done' && <CheckCircle2 size={16} className="text-emerald-600" />}
                 </div>
               ))}
@@ -1105,11 +1487,22 @@ function DocumentCentre({ language }: { language: Language }) {
                   <button 
                     onClick={() => {
                       const script = generateNBRScript(activeFile.structuredData);
-                      navigator.clipboard.writeText(script);
+                      copyToClipboard(script);
                     }}
-                    className="flex items-center gap-2 px-4 py-2 bg-zinc-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-zinc-800 transition-all shadow-lg shadow-zinc-900/20"
+                    className={cn(
+                      "flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg",
+                      copied ? "bg-emerald-500 text-white shadow-emerald-500/20" : "bg-zinc-900 text-white hover:bg-zinc-800 shadow-zinc-900/20"
+                    )}
                   >
-                    <Copy size={14} /> Copy NBR Script
+                    {copied ? (
+                      <>
+                        <Check size={14} /> {t.scriptCopied}
+                      </>
+                    ) : (
+                      <>
+                        <Copy size={14} /> {t.generateScript}
+                      </>
+                    )}
                   </button>
                 </div>
               )}
@@ -1117,14 +1510,75 @@ function DocumentCentre({ language }: { language: Language }) {
             
             <div className="flex-1 p-8 overflow-y-auto custom-scrollbar bg-zinc-50/20">
               {activeFile?.status === 'processing' ? (
-                <div className="h-full flex flex-col items-center justify-center text-center gap-4">
-                  <div className="w-16 h-16 rounded-full border-4 border-brand-100 border-t-brand-500 animate-spin" />
-                  <p className="text-sm font-black text-zinc-400 uppercase tracking-widest">Analyzing for NBR Compliance...</p>
+                <div className="h-full flex flex-col items-center justify-center text-center gap-6 p-12">
+                  <div className="relative w-24 h-24">
+                    <div className="absolute inset-0 rounded-full border-4 border-brand-100" />
+                    <motion.div 
+                      className="absolute inset-0 rounded-full border-4 border-brand-500 border-t-transparent"
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center text-brand-600 font-black text-xs">
+                      {activeFile.progress}%
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-sm font-black text-zinc-900 uppercase tracking-widest">{activeFile.analysisStep}</p>
+                    <div className="w-64 h-2 bg-zinc-100 rounded-full overflow-hidden">
+                      <motion.div 
+                        className="h-full bg-brand-500"
+                        initial={{ width: 0 }}
+                        animate={{ width: `${activeFile.progress}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ) : activeFile?.status === 'error' ? (
+                <div className="h-full flex items-center justify-center">
+                  <AIErrorDisplay 
+                    error="We couldn't extract data from this document. Please ensure the image is clear and try again."
+                    onRetry={() => processOCR(activeFileIndex!)}
+                  />
                 </div>
               ) : activeFile?.structuredData ? (
                 <div className="space-y-8">
+                  {activeFile?.previewUrl && (
+                    <div className="mb-8 overflow-hidden rounded-3xl border border-zinc-100 bg-zinc-50">
+                      <div className="p-4 border-b border-zinc-100 flex items-center justify-between bg-white">
+                        <h5 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest flex items-center gap-2">
+                          <ImageIcon size={14} /> {t.documentPreview}
+                        </h5>
+                        <a 
+                          href={activeFile.previewUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-[10px] font-black text-brand-600 uppercase tracking-widest hover:underline"
+                        >
+                          View Full Size
+                        </a>
+                      </div>
+                      <div className="p-4 flex justify-center">
+                        {activeFile.file.type.includes('image') ? (
+                          <img 
+                            src={activeFile.previewUrl} 
+                            alt="Preview" 
+                            className="max-h-[300px] rounded-xl shadow-lg"
+                            referrerPolicy="no-referrer"
+                          />
+                        ) : (
+                          <div className="py-12 flex flex-col items-center gap-3 text-zinc-400">
+                            <FileText size={48} />
+                            <p className="text-xs font-bold uppercase tracking-widest">PDF Document Preview</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <DataPoint label="Document Type" value={activeFile.structuredData.documentType} icon={<FileText size={16} />} />
+                    <DataPoint label="Date" value={activeFile.structuredData.date} icon={<History size={16} />} />
+                    <DataPoint label="Total Amount" value={activeFile.structuredData.totalAmount ? `৳${activeFile.structuredData.totalAmount.toLocaleString()}` : undefined} icon={<DollarSign size={16} />} />
                     <DataPoint label="Taxpayer Name" value={activeFile.structuredData.taxpayerName} icon={<User size={16} />} />
                     <DataPoint label="TIN Number" value={activeFile.structuredData.tin} icon={<Fingerprint size={16} />} />
                     <DataPoint label="Assessment Year" value={activeFile.structuredData.assessmentYear} icon={<History size={16} />} />
@@ -1134,6 +1588,38 @@ function DocumentCentre({ language }: { language: Language }) {
                       <DataPoint label="Investment" value={activeFile.structuredData.investmentAmount ? `৳${activeFile.structuredData.investmentAmount.toLocaleString()}` : undefined} icon={<TrendingUp size={16} />} />
                       <DataPoint label="Tax Paid" value={activeFile.structuredData.taxAmount ? `৳${activeFile.structuredData.taxAmount.toLocaleString()}` : undefined} icon={<ShieldCheck size={16} />} />
                     </div>
+
+                    {activeFile.structuredData.challans && activeFile.structuredData.challans.length > 0 && (
+                      <div className="md:col-span-2 mt-6">
+                        <h4 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                          <Database size={14} /> Extracted Challan Table
+                        </h4>
+                        <div className="overflow-x-auto rounded-2xl border border-zinc-100">
+                          <table className="w-full text-left text-xs">
+                            <thead className="bg-zinc-50 font-black text-zinc-500 uppercase tracking-widest">
+                              <tr>
+                                <th className="p-3">Month</th>
+                                <th className="p-3">Challan No</th>
+                                <th className="p-3">Date</th>
+                                <th className="p-3 text-right">Claimed</th>
+                                <th className="p-3 text-right">Total</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-zinc-100">
+                              {activeFile.structuredData.challans.map((c: any, idx: number) => (
+                                <tr key={idx} className="hover:bg-zinc-50 transition-all">
+                                  <td className="p-3 font-bold">{c.month}</td>
+                                  <td className="p-3 font-mono text-[10px]">{c.challanNo}</td>
+                                  <td className="p-3">{c.date}</td>
+                                  <td className="p-3 text-right font-bold text-brand-600">৳{c.claimedAmount?.toLocaleString()}</td>
+                                  <td className="p-3 text-right text-zinc-500">৳{c.challanAmount?.toLocaleString()}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="p-6 bg-brand-50 rounded-3xl border border-brand-100">
@@ -1149,6 +1635,27 @@ function DocumentCentre({ language }: { language: Language }) {
 
                   <div className="p-6 bg-white rounded-3xl border border-zinc-100 shadow-sm">
                     <div className="flex items-center gap-2 mb-4">
+                      <Users size={16} className="text-zinc-400" />
+                      <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">{t.relevantEntities}</span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {activeFile.structuredData.entities?.map((entity: any, idx: number) => (
+                        <div key={idx} className="p-3 bg-zinc-50 rounded-xl border border-zinc-100">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-xs font-black text-zinc-900">{entity.name}</span>
+                            <span className="text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 bg-zinc-200 text-zinc-600 rounded-md">{entity.type}</span>
+                          </div>
+                          {entity.relevance && <p className="text-[10px] text-zinc-500 italic">{entity.relevance}</p>}
+                        </div>
+                      ))}
+                      {(!activeFile.structuredData.entities || activeFile.structuredData.entities.length === 0) && (
+                        <p className="text-[10px] text-zinc-400 italic col-span-2">No entities identified</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="p-6 bg-white rounded-3xl border border-zinc-100 shadow-sm">
+                    <div className="flex items-center gap-2 mb-4">
                       <MessageSquare size={16} className="text-zinc-400" />
                       <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Raw AI Analysis</span>
                     </div>
@@ -1158,14 +1665,46 @@ function DocumentCentre({ language }: { language: Language }) {
                   </div>
                 </div>
               ) : (
-                <div className="h-full flex flex-col items-center justify-center text-center gap-4 opacity-40">
-                  <div className="w-20 h-20 bg-zinc-100 rounded-[2rem] flex items-center justify-center text-zinc-300">
-                    <Sparkles size={40} />
+                <div className="h-full flex flex-col items-center justify-center text-center gap-6">
+                  {activeFile?.previewUrl && (
+                    <div className="mb-4 overflow-hidden rounded-3xl border border-zinc-100 bg-zinc-50 max-w-md mx-auto">
+                      <div className="p-3 border-b border-zinc-100 flex items-center justify-between bg-white">
+                        <h5 className="text-[8px] font-black text-zinc-400 uppercase tracking-widest flex items-center gap-2">
+                          <ImageIcon size={12} /> {t.documentPreview}
+                        </h5>
+                      </div>
+                      <div className="p-4 flex justify-center">
+                        {activeFile.file.type.includes('image') ? (
+                          <img 
+                            src={activeFile.previewUrl} 
+                            alt="Preview" 
+                            className="max-h-[200px] rounded-lg shadow-md"
+                            referrerPolicy="no-referrer"
+                          />
+                        ) : (
+                          <div className="py-8 flex flex-col items-center gap-2 text-zinc-400">
+                            <FileText size={32} />
+                            <p className="text-[10px] font-bold uppercase tracking-widest">PDF Preview</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  <div className="w-16 h-16 bg-brand-50 rounded-[1.5rem] flex items-center justify-center text-brand-600 shadow-xl shadow-brand-500/10">
+                    <Sparkles size={32} className="animate-pulse" />
                   </div>
                   <div>
-                    <p className="text-lg font-black font-display tracking-tight">Ready for Analysis</p>
-                    <p className="text-xs font-black text-zinc-400 uppercase tracking-widest mt-1">Select an upload to extract NBR filing data</p>
+                    <p className="text-lg font-black font-display tracking-tight">{t.aiAnalyze}</p>
+                    <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mt-1">Extract key data from your document automatically</p>
                   </div>
+                  {activeFileIndex !== null && (
+                    <button 
+                      onClick={() => processOCR(activeFileIndex!)}
+                      className="flex items-center gap-2 px-8 py-4 bg-brand-600 text-white rounded-2xl font-black uppercase tracking-widest hover:bg-brand-700 transition-all shadow-xl shadow-brand-600/20 active:scale-95"
+                    >
+                      <Zap size={20} /> {t.aiAnalyze}
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -1208,39 +1747,82 @@ function DeveloperPanel({ notices, setNotices }: { notices: TaxNotice[], setNoti
 
   if (!isAuthorized) {
     return (
-      <div className="h-[calc(100vh-200px)] flex items-center justify-center p-6">
+      <div className="min-h-[calc(100vh-200px)] flex flex-col items-center justify-center p-6 gap-8">
         <motion.div 
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="neo-card p-12 rounded-[3.5rem] bg-white shadow-2xl shadow-zinc-200/50 border border-zinc-100 max-w-md w-full text-center space-y-8"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-8"
         >
-          <div className="w-20 h-20 bg-zinc-900 rounded-[2rem] flex items-center justify-center text-white mx-auto shadow-xl shadow-zinc-900/20">
-            <Lock size={32} />
-          </div>
-          <div>
-            <h3 className="text-2xl font-black font-display tracking-tight">Protected Access</h3>
-            <p className="text-xs text-zinc-400 uppercase font-black tracking-widest mt-2">Developer Panel requires authentication</p>
-          </div>
-          
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div className="relative">
-              <Fingerprint className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" size={20} />
-              <input 
-                type="password" 
-                placeholder="Enter Admin Key" 
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                className="w-full pl-12 pr-4 py-4 bg-zinc-50 border border-zinc-100 rounded-2xl text-sm focus:outline-none focus:ring-4 focus:ring-brand-500/5 focus:border-brand-500 transition-all"
-              />
+          {/* Open Source Info */}
+          <div className="neo-card p-12 rounded-[3.5rem] bg-zinc-900 text-white shadow-2xl shadow-zinc-900/20 border border-zinc-800 space-y-8 flex flex-col justify-center">
+            <div className="w-20 h-20 bg-white/10 rounded-[2rem] flex items-center justify-center text-white shadow-xl">
+              <Github size={32} />
             </div>
-            {error && <p className="text-[10px] font-black text-red-500 uppercase tracking-widest">{error}</p>}
-            <button 
-              type="submit"
-              className="w-full bg-zinc-900 text-white p-5 rounded-2xl font-black hover:bg-zinc-800 transition-all shadow-xl shadow-zinc-900/20 active:scale-95 flex items-center justify-center gap-2"
-            >
-              Verify Identity <ArrowRight size={20} />
-            </button>
-          </form>
+            <div>
+              <h3 className="text-3xl font-black font-display tracking-tight">Open Source Project</h3>
+              <p className="text-xs text-zinc-400 uppercase font-black tracking-widest mt-2">VATX.BD is committed to transparency</p>
+            </div>
+            <p className="text-sm text-zinc-400 font-medium leading-relaxed">
+              Our core VAT and Tax calculation engines are open-source. We believe that tax automation should be transparent, auditable, and community-driven.
+            </p>
+            <div className="space-y-3">
+              <a 
+                href="https://github.com/vatxbd/erpnext" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex items-center justify-between p-5 bg-white/5 rounded-2xl hover:bg-white/10 transition-all group border border-white/10"
+              >
+                <div className="flex items-center gap-3">
+                  <Database size={20} className="text-blue-400" />
+                  <span className="text-sm font-bold">ERPNext Integration</span>
+                </div>
+                <ExternalLink size={18} className="text-zinc-500 group-hover:text-white transition-colors" />
+              </a>
+              <a 
+                href="https://github.com/vatxbd/erpnext" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex items-center justify-between p-5 bg-white/5 rounded-2xl hover:bg-white/10 transition-all group border border-white/10"
+              >
+                <div className="flex items-center gap-3">
+                  <Code size={20} className="text-emerald-400" />
+                  <span className="text-sm font-bold">Tax Calculation Engine</span>
+                </div>
+                <ExternalLink size={18} className="text-zinc-500 group-hover:text-white transition-colors" />
+              </a>
+            </div>
+          </div>
+
+          {/* Admin Login */}
+          <div className="neo-card p-12 rounded-[3.5rem] bg-white shadow-2xl shadow-zinc-200/50 border border-zinc-100 space-y-8 flex flex-col justify-center">
+            <div className="w-20 h-20 bg-zinc-900 rounded-[2rem] flex items-center justify-center text-white mx-auto shadow-xl shadow-zinc-900/20">
+              <Lock size={32} />
+            </div>
+            <div className="text-center">
+              <h3 className="text-2xl font-black font-display tracking-tight">Admin Access</h3>
+              <p className="text-xs text-zinc-400 uppercase font-black tracking-widest mt-2">Authorized Personnel Only</p>
+            </div>
+            
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div className="relative">
+                <Fingerprint className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" size={20} />
+                <input 
+                  type="password" 
+                  placeholder="Enter Admin Key" 
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  className="w-full pl-12 pr-4 py-4 bg-zinc-50 border border-zinc-100 rounded-2xl text-sm focus:outline-none focus:ring-4 focus:ring-brand-500/5 focus:border-brand-500 transition-all"
+                />
+              </div>
+              {error && <p className="text-[10px] font-black text-red-500 uppercase tracking-widest text-center">{error}</p>}
+              <button 
+                type="submit"
+                className="w-full bg-zinc-900 text-white p-5 rounded-2xl font-black hover:bg-zinc-800 transition-all shadow-xl shadow-zinc-900/20 active:scale-95 flex items-center justify-center gap-2"
+              >
+                Verify Identity <ArrowRight size={20} />
+              </button>
+            </form>
+          </div>
         </motion.div>
       </div>
     );
@@ -3403,6 +3985,13 @@ function ToolsView({ setActiveTab }: { setActiveTab: (tab: Tab) => void }) {
           onClick={() => setActiveTab('invoice')}
         />
         <ToolCard 
+          icon={<Heart size={24} />}
+          title="Donation Centre"
+          description="Support foundations like Mastul and Assunnah with secure payments."
+          color="red"
+          onClick={() => setActiveTab('donation')}
+        />
+        <ToolCard 
           icon={<TrendingUp size={24} />}
           title="Profit Estimator"
           description="Calculate net profit after all tax deductions."
@@ -3420,7 +4009,8 @@ function ToolCard({ icon, title, description, color, onClick }: { icon: React.Re
     purple: "bg-purple-50 text-purple-600 border-purple-100",
     orange: "bg-orange-50 text-orange-600 border-orange-100",
     pink: "bg-pink-50 text-pink-600 border-pink-100",
-    indigo: "bg-indigo-50 text-indigo-600 border-indigo-100"
+    indigo: "bg-indigo-50 text-indigo-600 border-indigo-100",
+    red: "bg-red-50 text-red-600 border-red-100"
   };
 
   return (
@@ -3440,8 +4030,40 @@ function ToolCard({ icon, title, description, color, onClick }: { icon: React.Re
   );
 }
 
+function AIErrorDisplay({ onRetry, error, className }: { onRetry: () => void, error?: string, className?: string }) {
+  return (
+    <motion.div 
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      className={cn(
+        "flex flex-col items-center justify-center p-10 text-center gap-6 bg-red-50/30 rounded-[3rem] border border-red-100/50 backdrop-blur-sm",
+        className
+      )}
+    >
+      <div className="w-20 h-20 bg-red-100 rounded-[2rem] flex items-center justify-center text-red-600 shadow-xl shadow-red-200/40 relative">
+        <ShieldAlert size={40} />
+        <div className="absolute -top-1 -right-1 w-6 h-6 bg-white rounded-full flex items-center justify-center shadow-sm">
+          <div className="w-3 h-3 bg-red-500 rounded-full animate-ping" />
+        </div>
+      </div>
+      <div className="space-y-3 max-w-sm">
+        <h4 className="text-xl font-black font-display tracking-tight text-red-900">Connection Interrupted</h4>
+        <p className="text-xs text-red-600/70 font-bold leading-relaxed uppercase tracking-wider">
+          {error || "We encountered a temporary issue connecting to the AI engine. This could be due to network instability or service maintenance."}
+        </p>
+      </div>
+      <button 
+        onClick={onRetry}
+        className="group flex items-center gap-3 px-8 py-4 bg-red-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-red-700 transition-all shadow-xl shadow-red-600/20 active:scale-95"
+      >
+        <Zap size={16} className="group-hover:animate-pulse" /> Try Reconnecting
+      </button>
+    </motion.div>
+  );
+}
+
 function AIAssistant() {
-  const [messages, setMessages] = useState<{ role: 'user' | 'ai'; text: string }[]>(() => {
+  const [messages, setMessages] = useState<{ role: 'user' | 'ai'; text: string; isError?: boolean }[]>(() => {
     const saved = localStorage.getItem('vatx_ai_chat');
     return saved ? JSON.parse(saved) : [
       { role: 'ai', text: "Hello! I'm your dedicated AI Tax Advisor. I can provide concise, actionable answers about Bangladesh's tax laws, VAT regulations, and customs duties. How can I help you today?" }
@@ -3449,6 +4071,7 @@ function AIAssistant() {
   });
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -3459,7 +4082,7 @@ function AIAssistant() {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, [messages, loading, error]);
 
   const exportChat = () => {
     const content = messages.map(m => `${m.role.toUpperCase()}: ${m.text}`).join('\n\n---\n\n');
@@ -3479,6 +4102,7 @@ function AIAssistant() {
     if (!userMessage || loading) return;
 
     if (!customMessage) setInput('');
+    setError(null);
     setMessages(prev => [...prev, { role: 'user', text: userMessage }]);
     setLoading(true);
 
@@ -3489,7 +4113,17 @@ function AIAssistant() {
         contents: userMessage,
         config: {
           systemInstruction: `You are an expert Tax, VAT, and Customs consultant for Bangladesh. 
-          Your goal is to provide concise, actionable, and accurate information based on the National Board of Revenue (NBR) regulations and the Income Tax Act 2023.
+          Your goal is to provide concise, actionable, and accurate information based on the National Board of Revenue (NBR) regulations, the Income Tax Act 2023, and the Value Added Tax and Supplementary Duty Act, 2012 (with latest amendments including Finance Act 2024).
+          
+          Key VAT Law Context (Bangladesh):
+          - Primary Law: Value Added Tax and Supplementary Duty Act, 2012.
+          - Standard VAT Rate: 15%.
+          - Reduced Rates: 5%, 7.5%, 10% for specific goods/services.
+          - Registration Threshold: Annual turnover exceeding 3 Crore BDT.
+          - Enlistment Threshold: Annual turnover between 50 Lakh and 3 Crore BDT (Turnover Tax at 4%).
+          - VDS (VAT Deducted at Source): Applicable to specific services and government/semi-government entities.
+          - Mushak 9.1: The mandatory monthly VAT return form.
+          - EFD/SDC: Electronic Fiscal Devices are mandatory for specific retail and service sectors.
           
           Guidelines:
           - Be professional and direct.
@@ -3505,7 +4139,7 @@ function AIAssistant() {
       setMessages(prev => [...prev, { role: 'ai', text: aiText }]);
     } catch (err) {
       console.error(err);
-      setMessages(prev => [...prev, { role: 'ai', text: "I'm having trouble connecting to my knowledge base. Please try again later." }]);
+      setError("I'm having trouble connecting to my knowledge base. Please check your connection or try again.");
     } finally {
       setLoading(false);
     }
@@ -3513,6 +4147,7 @@ function AIAssistant() {
 
   const quickQueries = [
     { label: "Tax Slabs 2025", query: "What are the current income tax slabs for individuals in Bangladesh for FY 2025-26?" },
+    { label: "VAT Law 2024", query: "What are the key changes in the Finance Act 2024 regarding VAT in Bangladesh?" },
     { label: "VAT on Software", query: "What is the VAT rate for software development and IT enabled services in Bangladesh?" },
     { label: "Customs Duty", query: "How is customs duty calculated for imported electronics in Bangladesh?" },
     { label: "Tax Rebate", query: "What are the rules for investment tax rebate in Bangladesh according to the 2023 Act?" }
@@ -3582,7 +4217,9 @@ function AIAssistant() {
                   ? "bg-white text-zinc-800 border border-zinc-100 rounded-tl-none" 
                   : "bg-brand-600 text-white rounded-tr-none shadow-brand-600/20"
               )}>
-                <div className="whitespace-pre-wrap font-medium">{msg.text}</div>
+                <div className="prose prose-sm max-w-none prose-p:leading-relaxed prose-li:my-1 prose-headings:font-black">
+                  <Markdown>{msg.text}</Markdown>
+                </div>
                 {msg.role === 'ai' && (
                   <button 
                     onClick={() => {
@@ -3597,6 +4234,14 @@ function AIAssistant() {
               </div>
             </motion.div>
           ))}
+          
+          {error && (
+            <AIErrorDisplay 
+              error={error} 
+              onRetry={() => handleSend(messages[messages.length - 1]?.text)} 
+              className="my-4"
+            />
+          )}
           {loading && (
             <motion.div 
               initial={{ opacity: 0 }}
@@ -3663,11 +4308,132 @@ const PRODUCT_CATEGORIES = [
   { name: 'Other (Manual)', rate: 15 }
 ];
 
+function Mushak63View({ invoice, onClose }: { invoice: any, onClose: () => void }) {
+  const subtotal = invoice.items.reduce((sum: number, item: any) => sum + (item.qty * item.price), 0);
+  const totalVat = invoice.items.reduce((sum: number, item: any) => sum + (item.qty * item.price * (item.vatRate / 100)), 0);
+  const total = subtotal + totalVat;
+
+  return (
+    <div className="fixed inset-0 bg-zinc-900/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4 overflow-y-auto">
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="bg-white p-12 rounded-[2.5rem] shadow-2xl max-w-4xl w-full relative print:p-0 print:shadow-none print:rounded-none"
+      >
+        <button 
+          onClick={onClose}
+          className="absolute top-6 right-6 p-2 bg-zinc-100 rounded-full hover:bg-zinc-200 transition-all print:hidden"
+        >
+          <X size={20} />
+        </button>
+
+        <div className="text-center mb-8">
+          <h2 className="text-xl font-bold uppercase">Government of the People's Republic of Bangladesh</h2>
+          <h3 className="text-lg font-bold uppercase">National Board of Revenue</h3>
+          <div className="mt-2 inline-block border-2 border-black px-4 py-1 font-black text-xl uppercase">Mushak - 6.3</div>
+          <p className="mt-1 font-bold">[See Clauses (C) and (F) of Sub-rule (1) of Rule 40]</p>
+          <h4 className="mt-2 text-xl font-black uppercase">Tax Invoice</h4>
+        </div>
+
+        <div className="grid grid-cols-2 gap-8 mb-8 border-b-2 border-black pb-8">
+          <div className="space-y-2">
+            <p><span className="font-bold">Name of Registered Person:</span> {invoice.seller.name}</p>
+            <p><span className="font-bold">BIN of Registered Person:</span> {invoice.seller.bin}</p>
+            <p><span className="font-bold">Address:</span> {invoice.seller.address}</p>
+          </div>
+          <div className="space-y-2 text-right">
+            <p><span className="font-bold">Invoice No:</span> {invoice.number}</p>
+            <p><span className="font-bold">Date of Issue:</span> {invoice.date}</p>
+            <p><span className="font-bold">Time of Issue:</span> {new Date().toLocaleTimeString()}</p>
+          </div>
+        </div>
+
+        <div className="mb-8 border-b-2 border-black pb-8">
+          <p><span className="font-bold">Name of Purchaser:</span> {invoice.buyer.name}</p>
+          <p><span className="font-bold">BIN of Purchaser:</span> {invoice.buyer.bin}</p>
+          <p><span className="font-bold">Address of Destination:</span> {invoice.buyer.address}</p>
+        </div>
+
+        <table className="w-full border-collapse border-2 border-black mb-8 text-sm">
+          <thead>
+            <tr className="bg-zinc-50">
+              <th className="border-2 border-black p-2">SL</th>
+              <th className="border-2 border-black p-2">Description of Goods/Services</th>
+              <th className="border-2 border-black p-2">Unit</th>
+              <th className="border-2 border-black p-2">Qty</th>
+              <th className="border-2 border-black p-2">Unit Value (৳)</th>
+              <th className="border-2 border-black p-2">Total Value (৳)</th>
+              <th className="border-2 border-black p-2">SD Rate (%)</th>
+              <th className="border-2 border-black p-2">SD Amount (৳)</th>
+              <th className="border-2 border-black p-2">VAT Rate (%)</th>
+              <th className="border-2 border-black p-2">VAT Amount (৳)</th>
+              <th className="border-2 border-black p-2">Total (৳)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {invoice.items.map((item: any, i: number) => {
+              const itemTotal = item.qty * item.price;
+              const itemVat = itemTotal * (item.vatRate / 100);
+              return (
+                <tr key={item.id}>
+                  <td className="border-2 border-black p-2 text-center">{i + 1}</td>
+                  <td className="border-2 border-black p-2">{item.desc}</td>
+                  <td className="border-2 border-black p-2 text-center">Pcs/Unit</td>
+                  <td className="border-2 border-black p-2 text-center">{item.qty}</td>
+                  <td className="border-2 border-black p-2 text-right">{item.price.toLocaleString()}</td>
+                  <td className="border-2 border-black p-2 text-right">{itemTotal.toLocaleString()}</td>
+                  <td className="border-2 border-black p-2 text-center">0</td>
+                  <td className="border-2 border-black p-2 text-right">0</td>
+                  <td className="border-2 border-black p-2 text-center">{item.vatRate}%</td>
+                  <td className="border-2 border-black p-2 text-right">{itemVat.toLocaleString()}</td>
+                  <td className="border-2 border-black p-2 text-right">{(itemTotal + itemVat).toLocaleString()}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+          <tfoot>
+            <tr className="font-bold bg-zinc-50">
+              <td colSpan={5} className="border-2 border-black p-2 text-right">Total</td>
+              <td className="border-2 border-black p-2 text-right">{subtotal.toLocaleString()}</td>
+              <td className="border-2 border-black p-2"></td>
+              <td className="border-2 border-black p-2 text-right">0</td>
+              <td className="border-2 border-black p-2"></td>
+              <td className="border-2 border-black p-2 text-right">{totalVat.toLocaleString()}</td>
+              <td className="border-2 border-black p-2 text-right">{total.toLocaleString()}</td>
+            </tr>
+          </tfoot>
+        </table>
+
+        <div className="grid grid-cols-2 gap-20 mt-20">
+          <div className="text-center border-t-2 border-black pt-2">
+            <p className="font-bold">Name of Authorized Person</p>
+            <p className="text-xs text-zinc-500">(Signature with Seal)</p>
+          </div>
+          <div className="text-center border-t-2 border-black pt-2">
+            <p className="font-bold">Purchaser's Signature</p>
+            <p className="text-xs text-zinc-500">(Where applicable)</p>
+          </div>
+        </div>
+
+        <div className="mt-12 flex justify-center print:hidden">
+          <button 
+            onClick={() => window.print()}
+            className="px-10 py-4 bg-zinc-900 text-white rounded-2xl font-bold hover:bg-black transition-all flex items-center gap-2"
+          >
+            <Printer size={20} /> Print Mushak 6.3
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
 function InvoiceGenerator() {
   const [templates, setTemplates] = useState<any[]>([]);
   const [clients, setClients] = useState<any[]>([]);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [showClientModal, setShowClientModal] = useState(false);
+  const [showMushak63, setShowMushak63] = useState(false);
   const [templateName, setTemplateName] = useState('');
   const [editingClient, setEditingClient] = useState<any>(null);
   const [editClientForm, setEditClientForm] = useState({ name: '', address: '', bin: '' });
@@ -3893,6 +4659,12 @@ function InvoiceGenerator() {
             className="px-6 py-3 btn-primary flex items-center gap-2 text-sm"
           >
             <Printer size={18} /> Print Invoice
+          </button>
+          <button 
+            onClick={() => setShowMushak63(true)}
+            className="px-6 py-3 bg-emerald-600 text-white rounded-2xl font-bold shadow-sm hover:bg-emerald-700 transition-all flex items-center gap-2 text-sm"
+          >
+            <FileText size={18} /> Mushak 6.3
           </button>
         </div>
       </div>
@@ -4385,19 +5157,59 @@ function InvoiceGenerator() {
                 </div>
               </div>
 
-              <div className="mt-16 pt-12 border-t border-zinc-100 text-center">
+              <div className="mt-12 flex flex-col items-center justify-center gap-4">
+                <div className="p-3 bg-white border border-zinc-100 rounded-2xl shadow-sm">
+                  <QRCodeSVG 
+                    value={`Invoice: ${invoice.number}\nAmount: ৳${total.toLocaleString()}\nSeller: ${invoice.seller.name}\nBuyer: ${invoice.buyer.name}`}
+                    size={100}
+                    level="H"
+                    includeMargin={false}
+                  />
+                </div>
+                <p className="text-[8px] text-zinc-400 font-bold uppercase tracking-widest">Scan to Verify Invoice</p>
+              </div>
+
+              <div className="mt-12 pt-12 border-t border-zinc-100 text-center">
                 <p className="text-[10px] text-zinc-300 uppercase font-black tracking-[0.3em]">Thank you for your business</p>
               </div>
             </div>
           </div>
         </div>
       </div>
+      {showMushak63 && (
+        <Mushak63View 
+          invoice={invoice} 
+          onClose={() => setShowMushak63(false)} 
+        />
+      )}
     </div>
   );
 }
 
-function ManifestView() {
+function ManifestView({ t }: { t: any }) {
   const [activeSubTab, setActiveSubTab] = useState<'igm' | 'checklist' | 'declaration'>('igm');
+  const [checklist, setChecklist] = useState([
+    { title: 'Bill of Lading / Airway Bill', desc: 'Proof of contract of carriage and ownership.', done: false },
+    { title: 'Commercial Invoice', desc: 'Detailed list of goods and their value.', done: false },
+    { title: 'Packing List', desc: 'Breakdown of contents in each package.', done: false },
+    { title: 'Certificate of Origin', desc: 'Proof of where the goods were manufactured.', done: false },
+    { title: 'Import/Export Permit (IRC/ERC)', desc: 'Valid registration with the NBR/Commerce Ministry.', done: false },
+    { title: 'Insurance Cover Note', desc: 'Required for assessment of assessable value.', done: false },
+    { title: 'Letter of Credit (L/C)', desc: 'Bank document for payment and compliance.', done: false },
+    { title: 'Proforma Invoice', desc: 'Initial quote used for L/C opening.', done: false },
+    { title: 'VAT Registration Certificate', desc: 'Proof of being a registered VAT payer.', done: false },
+    { title: 'Special Permits (L/A, NOC)', desc: 'Required for restricted or controlled items.', done: false }
+  ]);
+
+  const toggleCheck = (index: number) => {
+    const item = checklist[index];
+    if (!item.done) {
+      if (!confirm(t.confirmTaskComplete)) return;
+    }
+    const next = [...checklist];
+    next[index].done = !next[index].done;
+    setChecklist(next);
+  };
 
   return (
     <div className="max-w-6xl mx-auto space-y-8 pb-20">
@@ -4534,19 +5346,23 @@ function ManifestView() {
               <div className="space-y-6">
                 <h5 className="text-sm font-bold text-blue-600 uppercase tracking-wider">Mandatory Documents</h5>
                 <div className="space-y-4">
-                  {[
-                    { title: 'Bill of Lading / Airway Bill', desc: 'Proof of contract of carriage and ownership.' },
-                    { title: 'Commercial Invoice', desc: 'Detailed list of goods and their value.' },
-                    { title: 'Packing List', desc: 'Breakdown of contents in each package.' },
-                    { title: 'Certificate of Origin', desc: 'Proof of where the goods were manufactured.' },
-                    { title: 'Import/Export Permit (IRC/ERC)', desc: 'Valid registration with the NBR/Commerce Ministry.' }
-                  ].map((doc, i) => (
-                    <div key={i} className="flex gap-4 p-4 rounded-2xl border border-[#F3F4F6] hover:border-blue-200 transition-all">
-                      <div className="w-6 h-6 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-[10px] font-bold flex-shrink-0">
-                        {i + 1}
+                  {checklist.slice(0, 5).map((doc, i) => (
+                    <div 
+                      key={i} 
+                      onClick={() => toggleCheck(i)}
+                      className={cn(
+                        "flex gap-4 p-4 rounded-2xl border transition-all cursor-pointer",
+                        doc.done ? "bg-blue-50 border-blue-200" : "bg-white border-[#F3F4F6] hover:border-blue-200"
+                      )}
+                    >
+                      <div className={cn(
+                        "w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 transition-all",
+                        doc.done ? "bg-blue-600 text-white" : "bg-blue-50 text-blue-600"
+                      )}>
+                        {doc.done ? <CheckCircle2 size={14} /> : i + 1}
                       </div>
                       <div>
-                        <h6 className="text-sm font-bold">{doc.title}</h6>
+                        <h6 className={cn("text-sm font-bold transition-all", doc.done && "text-blue-700 line-through")}>{doc.title}</h6>
                         <p className="text-xs text-[#6B7280]">{doc.desc}</p>
                       </div>
                     </div>
@@ -4556,19 +5372,23 @@ function ManifestView() {
               <div className="space-y-6">
                 <h5 className="text-sm font-bold text-emerald-600 uppercase tracking-wider">Additional Requirements</h5>
                 <div className="space-y-4">
-                  {[
-                    { title: 'Insurance Cover Note', desc: 'Required for assessment of assessable value.' },
-                    { title: 'Letter of Credit (L/C)', desc: 'Bank document for payment and compliance.' },
-                    { title: 'Proforma Invoice', desc: 'Initial quote used for L/C opening.' },
-                    { title: 'VAT Registration Certificate', desc: 'Proof of being a registered VAT payer.' },
-                    { title: 'Special Permits (L/A, NOC)', desc: 'Required for restricted or controlled items.' }
-                  ].map((doc, i) => (
-                    <div key={i} className="flex gap-4 p-4 rounded-2xl border border-[#F3F4F6] hover:border-emerald-200 transition-all">
-                      <div className="w-6 h-6 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-[10px] font-bold flex-shrink-0">
-                        {i + 6}
+                  {checklist.slice(5).map((doc, i) => (
+                    <div 
+                      key={i + 5} 
+                      onClick={() => toggleCheck(i + 5)}
+                      className={cn(
+                        "flex gap-4 p-4 rounded-2xl border transition-all cursor-pointer",
+                        doc.done ? "bg-emerald-50 border-emerald-200" : "bg-white border-[#F3F4F6] hover:border-emerald-200"
+                      )}
+                    >
+                      <div className={cn(
+                        "w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 transition-all",
+                        doc.done ? "bg-emerald-600 text-white" : "bg-emerald-50 text-emerald-600"
+                      )}>
+                        {doc.done ? <CheckCircle2 size={14} /> : i + 6}
                       </div>
                       <div>
-                        <h6 className="text-sm font-bold">{doc.title}</h6>
+                        <h6 className={cn("text-sm font-bold transition-all", doc.done && "text-emerald-700 line-through")}>{doc.title}</h6>
                         <p className="text-xs text-[#6B7280]">{doc.desc}</p>
                       </div>
                     </div>
@@ -4653,11 +5473,30 @@ function ManifestView() {
   );
 }
 
-function ReportsView({ vatHistory, taxHistory }: { vatHistory: any[], taxHistory: any[] }) {
+function ReportsView({ vatHistory, taxHistory, t }: { vatHistory: any[], taxHistory: any[], t: any }) {
+  const [checklist, setChecklist] = useState([
+    { label: 'VAT Return Filed (Current Month)', status: vatHistory.length > 0 },
+    { label: 'Income Tax Assessment Completed', status: taxHistory.length > 0 },
+    { label: 'BIN/TIN Information Updated', status: true },
+    { label: 'Recent Invoice Generation', status: true },
+    { label: 'Customs Tariff Compliance Check', status: true },
+    { label: 'E-Return Submission Ready', status: false }
+  ]);
+
+  const toggleCheck = (index: number) => {
+    const item = checklist[index];
+    if (!item.status) {
+      if (!confirm(t.confirmTaskComplete)) return;
+    }
+    const next = [...checklist];
+    next[index].status = !next[index].status;
+    setChecklist(next);
+  };
+
   const totalVat = vatHistory.reduce((sum, h) => sum + (h.result?.vatAmount || 0), 0);
   const totalIncomeTax = taxHistory.reduce((sum, h) => sum + (h.result?.taxLiability || 0), 0);
   
-  const complianceScore = Math.min(100, (vatHistory.length + taxHistory.length) * 10);
+  const complianceScore = Math.min(100, (vatHistory.length + taxHistory.length) * 10 + checklist.filter(c => c.status).length * 5);
   
   const combinedHistory = [
     ...vatHistory.map(h => ({ ...h, type: 'VAT' })),
@@ -4790,15 +5629,12 @@ function ReportsView({ vatHistory, taxHistory }: { vatHistory: any[], taxHistory
       <div className="bg-white p-8 rounded-3xl shadow-sm border border-[#F3F4F6] space-y-6">
         <h4 className="text-lg font-bold">Compliance Checklist Status</h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {[
-            { label: 'VAT Return Filed (Current Month)', status: vatHistory.length > 0 },
-            { label: 'Income Tax Assessment Completed', status: taxHistory.length > 0 },
-            { label: 'BIN/TIN Information Updated', status: true },
-            { label: 'Recent Invoice Generation', status: true },
-            { label: 'Customs Tariff Compliance Check', status: true },
-            { label: 'E-Return Submission Ready', status: complianceScore > 70 }
-          ].map((item, i) => (
-            <div key={i} className="flex items-center justify-between p-4 bg-[#F9FAFB] rounded-2xl border border-[#E5E7EB]">
+          {checklist.map((item, i) => (
+            <div 
+              key={i} 
+              onClick={() => toggleCheck(i)}
+              className="flex items-center justify-between p-4 bg-[#F9FAFB] rounded-2xl border border-[#E5E7EB] cursor-pointer hover:bg-white hover:shadow-md transition-all"
+            >
               <span className="text-sm font-medium text-[#374151]">{item.label}</span>
               {item.status ? (
                 <span className="px-3 py-1 bg-emerald-50 text-emerald-600 text-[10px] font-bold rounded-full uppercase">Completed</span>
@@ -5394,6 +6230,7 @@ function HSCodeFinder() {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [fobValue, setFobValue] = useState<number>(0);
   const [insurance, setInsurance] = useState<number>(1); // Default 1%
   const [freight, setFreight] = useState<number>(0);
@@ -5416,16 +6253,19 @@ function HSCodeFinder() {
   const searchHSCode = async () => {
     if (!query.trim()) return;
     setLoading(true);
+    setError(null);
     try {
       const res = await fetch('/api/hscode/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query })
       });
+      if (!res.ok) throw new Error('Search failed');
       const data = await res.json();
       setResults(data);
     } catch (err) {
       console.error(err);
+      setError("We couldn't connect to the HS Code database. Please check your internet connection and try again.");
     } finally {
       setLoading(false);
     }
@@ -5477,6 +6317,14 @@ function HSCodeFinder() {
               {loading ? 'Searching...' : <><Search size={20} /> Find Codes</>}
             </button>
           </div>
+
+          {error && (
+            <AIErrorDisplay 
+              error={error} 
+              onRetry={searchHSCode} 
+              className="mt-8"
+            />
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t border-zinc-50">
             <div className="space-y-2">

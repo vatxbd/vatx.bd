@@ -35,6 +35,7 @@ import {
   AlertCircle,
   CheckCircle2,
   Sparkles,
+  Layers,
   Send,
   Bot,
   MessageSquare,
@@ -191,8 +192,10 @@ import ComplianceCalendar from './components/ComplianceCalendar';
 import AgentMarketplace from './components/AgentMarketplace';
 import ChallanVerification from './components/ChallanVerification';
 import MFSPayment from './components/MFSPayment';
+import TDSTracker from './components/TDSTracker';
+import OCRFormAutomation from './components/OCRFormAutomation';
 
-type Tab = 'dashboard' | 'vat' | 'tax' | 'tariff' | 'manifest' | 'reports' | 'blog' | 'tools' | 'ai' | 'invoice' | 'history' | 'notices' | 'rebate' | 'hscode' | 'subscription' | 'crypto-tax' | 'blockchain-verify' | 'tokenized-cert' | 'tax-advisory' | 'zakat' | 'final-tax' | 'developer' | 'documents' | 'critical-vat' | 'help' | 'social' | 'base' | 'x-scraper' | 'whatsapp' | 'odoo' | 'dropbox' | 'odoo-erp' | 'erpnext' | 'vat-agents' | 'live-agent' | 'donation' | 'vds-tracker' | 'compliance-calendar' | 'agent-marketplace' | 'challan-verify' | 'mfs-payment';
+type Tab = 'dashboard' | 'vat' | 'tax' | 'tariff' | 'manifest' | 'reports' | 'blog' | 'tools' | 'ai' | 'invoice' | 'history' | 'notices' | 'rebate' | 'hscode' | 'subscription' | 'crypto-tax' | 'blockchain-verify' | 'tokenized-cert' | 'tax-advisory' | 'zakat' | 'final-tax' | 'developer' | 'documents' | 'critical-vat' | 'help' | 'social' | 'base' | 'x-scraper' | 'whatsapp' | 'odoo' | 'dropbox' | 'odoo-erp' | 'erpnext' | 'vat-agents' | 'live-agent' | 'donation' | 'vds-tracker' | 'tds-tracker' | 'compliance-calendar' | 'agent-marketplace' | 'challan-verify' | 'mfs-payment';
 
 interface TaxNotice {
   id: number;
@@ -217,6 +220,7 @@ export default function App() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showLiveAgent, setShowLiveAgent] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [prefilledInvoice, setPrefilledInvoice] = useState<any>(null);
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -578,6 +582,12 @@ export default function App() {
               label="VDS Tracker" 
               active={activeTab === 'vds-tracker'} 
               onClick={() => setActiveTab('vds-tracker')} 
+            />
+            <NavItem 
+              icon={<Calculator size={18} />} 
+              label="TDS Tracker" 
+              active={activeTab === 'tds-tracker'} 
+              onClick={() => setActiveTab('tds-tracker')} 
             />
             <NavItem 
               icon={<Calendar size={18} />} 
@@ -947,7 +957,7 @@ export default function App() {
             {activeTab === 'manifest' && <ManifestView t={t} />}
             {activeTab === 'reports' && <ReportsView vatHistory={vatHistory} taxHistory={taxHistory} t={t} />}
             {activeTab === 'ai' && <AIAssistant />}
-            {activeTab === 'invoice' && <InvoiceGenerator />}
+            {activeTab === 'invoice' && <InvoiceGenerator initialData={prefilledInvoice} />}
             {activeTab === 'blog' && <BlogView />}
             {activeTab === 'tools' && <ToolsView setActiveTab={setActiveTab} />}
             {activeTab === 'history' && <HistoryView vatHistory={vatHistory} taxHistory={taxHistory} />}
@@ -962,7 +972,10 @@ export default function App() {
             {activeTab === 'zakat' && <ZakatCalculator />}
             {activeTab === 'critical-vat' && <Mushak91Form />}
             {activeTab === 'developer' && <DeveloperPanel notices={notices} setNotices={setNotices} />}
-            {activeTab === 'documents' && <DocumentCentre language={language} />}
+            {activeTab === 'documents' && <DocumentCentre language={language} setLanguage={setLanguage} onInvoiceExtracted={(data) => {
+              setPrefilledInvoice(data);
+              setActiveTab('invoice');
+            }} />}
             {activeTab === 'social' && <SocialIntegration />}
             {activeTab === 'base' && <BaseManager />}
             {activeTab === 'x-scraper' && <XScraper />}
@@ -973,6 +986,7 @@ export default function App() {
             {activeTab === 'erpnext' && <ERPNextIntegration />}
             {activeTab === 'donation' && <DonationCentre />}
             {activeTab === 'vds-tracker' && <VDSTracker />}
+            {activeTab === 'tds-tracker' && <TDSTracker />}
             {activeTab === 'compliance-calendar' && <ComplianceCalendar />}
             {activeTab === 'agent-marketplace' && <AgentMarketplace />}
             {activeTab === 'challan-verify' && <ChallanVerification />}
@@ -1020,8 +1034,9 @@ function NavItem({ icon, label, active, onClick }: { icon: React.ReactNode, labe
   );
 }
 
-function DocumentCentre({ language }: { language: Language }) {
+function DocumentCentre({ language, setLanguage, onInvoiceExtracted }: { language: Language, setLanguage: (l: Language) => void, onInvoiceExtracted: (data: any) => void }) {
   const t = translations[language];
+  const [activeSubTab, setActiveSubTab] = useState<'ocr' | 'automation'>('ocr');
   const [files, setFiles] = useState<{ 
     file: File; 
     previewUrl?: string;
@@ -1392,19 +1407,69 @@ function DocumentCentre({ language }: { language: Language }) {
 
   return (
     <div className="space-y-8">
-      <SectionGuide 
-        language={language}
-        title="স্মার্ট ওসিআর ও এনবিআর (NBR) অটোমেশন গাইড"
-        steps={[
-          "আপনার ডকুমেন্ট আপলোড করুন (Invoice, Mushak 6.3, Salary Certificate)।",
-          "ডকুমেন্টটি নির্বাচন করুন এবং 'AI Analyze' বাটনে ক্লিক করুন।",
-          "এআই স্বয়ংক্রিয়ভাবে এনবিআর পোর্টালের জন্য প্রয়োজনীয় তথ্য সংগ্রহ করবে।",
-          "তথ্য যাচাই করে 'Generate NBR Script' বাটনে ক্লিক করুন।",
-          "এনবিআর পোর্টালে (trms.nbr.gov.bd) গিয়ে ব্রাউজার কনসোলে স্ক্রিপ্টটি পেস্ট করুন।"
-        ]}
-      />
+      <div className="flex justify-between items-center mb-8">
+        <div className="flex bg-zinc-100 p-1.5 rounded-2xl w-fit">
+          <button
+            onClick={() => setActiveSubTab('ocr')}
+            className={cn(
+              "px-8 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2",
+              activeSubTab === 'ocr' ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-400 hover:text-zinc-600"
+            )}
+          >
+            <FileSearch size={18} />
+            {t.smartOcr || 'Smart OCR'}
+          </button>
+          <button
+            onClick={() => setActiveSubTab('automation')}
+            className={cn(
+              "px-8 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2",
+              activeSubTab === 'automation' ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-400 hover:text-zinc-600"
+            )}
+          >
+            <Layers size={18} />
+            {t.formAutomation || 'Form Automation'}
+          </button>
+        </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="flex bg-zinc-100 p-1.5 rounded-2xl">
+          <button
+            onClick={() => setLanguage('en')}
+            className={cn(
+              "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+              language === 'en' ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-400 hover:text-zinc-600"
+            )}
+          >
+            English
+          </button>
+          <button
+            onClick={() => setLanguage('bn')}
+            className={cn(
+              "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+              language === 'bn' ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-400 hover:text-zinc-600"
+            )}
+          >
+            বাংলা
+          </button>
+        </div>
+      </div>
+
+      {activeSubTab === 'automation' ? (
+        <OCRFormAutomation language={language} onInvoiceExtracted={onInvoiceExtracted} />
+      ) : (
+        <>
+          <SectionGuide 
+            language={language}
+            title={t.ocrGuideTitle}
+            steps={[
+              t.ocrStep1,
+              t.ocrStep2,
+              t.ocrStep3,
+              t.ocrStep4,
+              t.ocrStep5
+            ]}
+          />
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-1 space-y-6">
           <div 
             {...getRootProps()} 
@@ -1418,13 +1483,13 @@ function DocumentCentre({ language }: { language: Language }) {
               <Upload size={32} />
             </div>
             <div>
-              <p className="text-lg font-black font-display tracking-tight">Drop documents here</p>
-              <p className="text-xs text-zinc-500 mt-1 uppercase font-black tracking-widest">PDF, JPEG, PNG up to 10MB</p>
+              <p className="text-lg font-black font-display tracking-tight">{t.dropDocuments}</p>
+              <p className="text-xs text-zinc-500 mt-1 uppercase font-black tracking-widest">{t.fileTypes}</p>
             </div>
           </div>
 
           <div className="neo-card p-8 rounded-[3rem] bg-white shadow-xl shadow-zinc-200/50 border border-zinc-100">
-            <h4 className="text-sm font-black uppercase tracking-widest text-zinc-400 mb-6">Recent Uploads</h4>
+            <h4 className="text-sm font-black uppercase tracking-widest text-zinc-400 mb-6">{t.recentUploads}</h4>
             <div className="space-y-3">
               {files.map((f, i) => (
                 <div 
@@ -1464,7 +1529,7 @@ function DocumentCentre({ language }: { language: Language }) {
                 </div>
               ))}
               {files.length === 0 && (
-                <div className="py-10 text-center text-zinc-400 italic text-xs">No documents uploaded yet</div>
+                <div className="py-10 text-center text-zinc-400 italic text-xs">{t.noDocuments}</div>
               )}
             </div>
           </div>
@@ -1478,8 +1543,8 @@ function DocumentCentre({ language }: { language: Language }) {
                   <Bot size={20} />
                 </div>
                 <div>
-                  <h3 className="text-lg font-black font-display tracking-tight">NBR Automation Assistant</h3>
-                  <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Structured Data & Filing Bridge</p>
+                  <h3 className="text-lg font-black font-display tracking-tight">{t.nbrAssistant}</h3>
+                  <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">{t.dataFilingBridge}</p>
                 </div>
               </div>
               {activeFile?.structuredData && (
@@ -1536,7 +1601,7 @@ function DocumentCentre({ language }: { language: Language }) {
               ) : activeFile?.status === 'error' ? (
                 <div className="h-full flex items-center justify-center">
                   <AIErrorDisplay 
-                    error="We couldn't extract data from this document. Please ensure the image is clear and try again."
+                    error={t.ocrError}
                     onRetry={() => processOCR(activeFileIndex!)}
                   />
                 </div>
@@ -1554,7 +1619,7 @@ function DocumentCentre({ language }: { language: Language }) {
                           rel="noopener noreferrer"
                           className="text-[10px] font-black text-brand-600 uppercase tracking-widest hover:underline"
                         >
-                          View Full Size
+                          {t.viewFullSize}
                         </a>
                       </div>
                       <div className="p-4 flex justify-center">
@@ -1568,7 +1633,7 @@ function DocumentCentre({ language }: { language: Language }) {
                         ) : (
                           <div className="py-12 flex flex-col items-center gap-3 text-zinc-400">
                             <FileText size={48} />
-                            <p className="text-xs font-bold uppercase tracking-widest">PDF Document Preview</p>
+                            <p className="text-xs font-bold uppercase tracking-widest">{t.pdfPreview}</p>
                           </div>
                         )}
                       </div>
@@ -1576,33 +1641,33 @@ function DocumentCentre({ language }: { language: Language }) {
                   )}
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <DataPoint label="Document Type" value={activeFile.structuredData.documentType} icon={<FileText size={16} />} />
-                    <DataPoint label="Date" value={activeFile.structuredData.date} icon={<History size={16} />} />
-                    <DataPoint label="Total Amount" value={activeFile.structuredData.totalAmount ? `৳${activeFile.structuredData.totalAmount.toLocaleString()}` : undefined} icon={<DollarSign size={16} />} />
-                    <DataPoint label="Taxpayer Name" value={activeFile.structuredData.taxpayerName} icon={<User size={16} />} />
-                    <DataPoint label="TIN Number" value={activeFile.structuredData.tin} icon={<Fingerprint size={16} />} />
-                    <DataPoint label="Assessment Year" value={activeFile.structuredData.assessmentYear} icon={<History size={16} />} />
+                    <DataPoint label={t.docType} value={activeFile.structuredData.documentType} icon={<FileText size={16} />} />
+                    <DataPoint label={t.date} value={activeFile.structuredData.date} icon={<History size={16} />} />
+                    <DataPoint label={t.totalAmount} value={activeFile.structuredData.totalAmount ? `৳${activeFile.structuredData.totalAmount.toLocaleString()}` : undefined} icon={<DollarSign size={16} />} />
+                    <DataPoint label={t.taxpayerName} value={activeFile.structuredData.taxpayerName} icon={<User size={16} />} />
+                    <DataPoint label={t.tinNumber} value={activeFile.structuredData.tin} icon={<Fingerprint size={16} />} />
+                    <DataPoint label={t.assessmentYear} value={activeFile.structuredData.assessmentYear} icon={<History size={16} />} />
                     
                     <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-zinc-100">
-                      <DataPoint label="Salary Income" value={activeFile.structuredData.salaryIncome ? `৳${activeFile.structuredData.salaryIncome.toLocaleString()}` : undefined} icon={<Coins size={16} />} />
-                      <DataPoint label="Investment" value={activeFile.structuredData.investmentAmount ? `৳${activeFile.structuredData.investmentAmount.toLocaleString()}` : undefined} icon={<TrendingUp size={16} />} />
-                      <DataPoint label="Tax Paid" value={activeFile.structuredData.taxAmount ? `৳${activeFile.structuredData.taxAmount.toLocaleString()}` : undefined} icon={<ShieldCheck size={16} />} />
+                      <DataPoint label={t.salaryIncome} value={activeFile.structuredData.salaryIncome ? `৳${activeFile.structuredData.salaryIncome.toLocaleString()}` : undefined} icon={<Coins size={16} />} />
+                      <DataPoint label={t.investment} value={activeFile.structuredData.investmentAmount ? `৳${activeFile.structuredData.investmentAmount.toLocaleString()}` : undefined} icon={<TrendingUp size={16} />} />
+                      <DataPoint label={t.taxPaid} value={activeFile.structuredData.taxAmount ? `৳${activeFile.structuredData.taxAmount.toLocaleString()}` : undefined} icon={<ShieldCheck size={16} />} />
                     </div>
 
                     {activeFile.structuredData.challans && activeFile.structuredData.challans.length > 0 && (
                       <div className="md:col-span-2 mt-6">
                         <h4 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                          <Database size={14} /> Extracted Challan Table
+                          <Database size={14} /> {t.challanTable}
                         </h4>
                         <div className="overflow-x-auto rounded-2xl border border-zinc-100">
                           <table className="w-full text-left text-xs">
                             <thead className="bg-zinc-50 font-black text-zinc-500 uppercase tracking-widest">
                               <tr>
-                                <th className="p-3">Month</th>
-                                <th className="p-3">Challan No</th>
-                                <th className="p-3">Date</th>
-                                <th className="p-3 text-right">Claimed</th>
-                                <th className="p-3 text-right">Total</th>
+                                <th className="p-3">{t.month}</th>
+                                <th className="p-3">{t.challanNo}</th>
+                                <th className="p-3">{t.date}</th>
+                                <th className="p-3 text-right">{t.claimed}</th>
+                                <th className="p-3 text-right">{t.total}</th>
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-zinc-100">
@@ -1711,7 +1776,9 @@ function DocumentCentre({ language }: { language: Language }) {
           </div>
         </div>
       </div>
-    </div>
+    </>
+  )}
+</div>
   );
 }
 
@@ -4428,7 +4495,7 @@ function Mushak63View({ invoice, onClose }: { invoice: any, onClose: () => void 
   );
 }
 
-function InvoiceGenerator() {
+function InvoiceGenerator({ initialData }: { initialData?: any }) {
   const [templates, setTemplates] = useState<any[]>([]);
   const [clients, setClients] = useState<any[]>([]);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
@@ -4437,7 +4504,7 @@ function InvoiceGenerator() {
   const [templateName, setTemplateName] = useState('');
   const [editingClient, setEditingClient] = useState<any>(null);
   const [editClientForm, setEditClientForm] = useState({ name: '', address: '', bin: '' });
-  const [invoice, setInvoice] = useState({
+  const [invoice, setInvoice] = useState(initialData || {
     number: `INV-${Date.now().toString().slice(-6)}`,
     date: new Date().toISOString().split('T')[0],
     recurring: 'none',
@@ -4445,6 +4512,12 @@ function InvoiceGenerator() {
     buyer: { name: '', address: '', bin: '' },
     items: [{ id: 1, desc: '', category: 'Standard Goods/Services', qty: 1, price: 0, vatRate: 15 }]
   });
+
+  useEffect(() => {
+    if (initialData) {
+      setInvoice(initialData);
+    }
+  }, [initialData]);
 
   useEffect(() => {
     fetchTemplates();
@@ -4879,7 +4952,7 @@ function InvoiceGenerator() {
                 <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-widest">Invoice Number</label>
                 <input 
                   type="text" 
-                  value={invoice.number}
+                  value={invoice.number || ""}
                   onChange={(e) => setInvoice({ ...invoice, number: e.target.value })}
                   className="w-full px-5 py-3.5 bg-zinc-50 border border-zinc-100 rounded-2xl focus:ring-4 focus:ring-brand-500/5 focus:border-brand-500 outline-none text-sm font-medium transition-all"
                 />
@@ -4888,7 +4961,7 @@ function InvoiceGenerator() {
                 <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-widest">Issue Date</label>
                 <input 
                   type="date" 
-                  value={invoice.date}
+                  value={invoice.date || ""}
                   onChange={(e) => setInvoice({ ...invoice, date: e.target.value })}
                   className="w-full px-5 py-3.5 bg-zinc-50 border border-zinc-100 rounded-2xl focus:ring-4 focus:ring-brand-500/5 focus:border-brand-500 outline-none text-sm font-medium transition-all"
                 />
@@ -4921,19 +4994,19 @@ function InvoiceGenerator() {
                 <div className="space-y-4">
                   <input 
                     placeholder="Business Name"
-                    value={invoice.seller.name}
+                    value={invoice.seller.name || ""}
                     onChange={(e) => setInvoice({ ...invoice, seller: { ...invoice.seller, name: e.target.value }})}
                     className="w-full px-5 py-3.5 bg-zinc-50 border border-zinc-100 rounded-2xl focus:ring-4 focus:ring-brand-500/5 focus:border-brand-500 outline-none text-sm font-medium transition-all"
                   />
                   <textarea 
                     placeholder="Business Address"
-                    value={invoice.seller.address}
+                    value={invoice.seller.address || ""}
                     onChange={(e) => setInvoice({ ...invoice, seller: { ...invoice.seller, address: e.target.value }})}
                     className="w-full px-5 py-3.5 bg-zinc-50 border border-zinc-100 rounded-2xl focus:ring-4 focus:ring-brand-500/5 focus:border-brand-500 outline-none text-sm font-medium transition-all min-h-[100px]"
                   />
                   <input 
                     placeholder="BIN (Business Identification Number)"
-                    value={invoice.seller.bin}
+                    value={invoice.seller.bin || ""}
                     onChange={(e) => setInvoice({ ...invoice, seller: { ...invoice.seller, bin: e.target.value }})}
                     className="w-full px-5 py-3.5 bg-zinc-50 border border-zinc-100 rounded-2xl focus:ring-4 focus:ring-brand-500/5 focus:border-brand-500 outline-none text-sm font-medium transition-all"
                   />
@@ -4962,7 +5035,7 @@ function InvoiceGenerator() {
                   <div className="relative">
                     <input 
                       placeholder="Customer Name"
-                      value={invoice.buyer.name}
+                      value={invoice.buyer.name || ""}
                       onChange={(e) => setInvoice({ ...invoice, buyer: { ...invoice.buyer, name: e.target.value }})}
                       className="w-full px-5 py-3.5 bg-zinc-50 border border-zinc-100 rounded-2xl focus:ring-4 focus:ring-brand-500/5 focus:border-brand-500 outline-none text-sm font-medium transition-all pr-12"
                     />
@@ -4988,13 +5061,13 @@ function InvoiceGenerator() {
                   </div>
                   <textarea 
                     placeholder="Customer Address"
-                    value={invoice.buyer.address}
+                    value={invoice.buyer.address || ""}
                     onChange={(e) => setInvoice({ ...invoice, buyer: { ...invoice.buyer, address: e.target.value }})}
                     className="w-full px-5 py-3.5 bg-zinc-50 border border-zinc-100 rounded-2xl focus:ring-4 focus:ring-brand-500/5 focus:border-brand-500 outline-none text-sm font-medium transition-all min-h-[100px]"
                   />
                   <input 
                     placeholder="BIN / TIN"
-                    value={invoice.buyer.bin}
+                    value={invoice.buyer.bin || ""}
                     onChange={(e) => setInvoice({ ...invoice, buyer: { ...invoice.buyer, bin: e.target.value }})}
                     className="w-full px-5 py-3.5 bg-zinc-50 border border-zinc-100 rounded-2xl focus:ring-4 focus:ring-brand-500/5 focus:border-brand-500 outline-none text-sm font-medium transition-all"
                   />
@@ -5022,7 +5095,7 @@ function InvoiceGenerator() {
                       <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Description</label>
                       <input 
                         placeholder="Item name or service"
-                        value={item.desc}
+                        value={item.desc || ""}
                         onChange={(e) => updateItem(item.id, 'desc', e.target.value)}
                         className="w-full px-4 py-2.5 bg-white border border-zinc-200 rounded-xl text-sm focus:ring-4 focus:ring-brand-500/5 focus:border-brand-500 outline-none transition-all"
                       />
@@ -5043,7 +5116,7 @@ function InvoiceGenerator() {
                       <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest text-center block">Qty</label>
                       <input 
                         type="number"
-                        value={item.qty}
+                        value={item.qty ?? 0}
                         onChange={(e) => updateItem(item.id, 'qty', parseFloat(e.target.value) || 0)}
                         className="w-full px-2 py-2.5 bg-white border border-zinc-200 rounded-xl text-sm text-center focus:ring-4 focus:ring-brand-500/5 focus:border-brand-500 outline-none transition-all"
                       />
@@ -5052,7 +5125,7 @@ function InvoiceGenerator() {
                       <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest text-right block">Price</label>
                       <input 
                         type="number"
-                        value={item.price}
+                        value={item.price ?? 0}
                         onChange={(e) => updateItem(item.id, 'price', parseFloat(e.target.value) || 0)}
                         className="w-full px-4 py-2.5 bg-white border border-zinc-200 rounded-xl text-sm text-right focus:ring-4 focus:ring-brand-500/5 focus:border-brand-500 outline-none transition-all"
                       />
@@ -5652,6 +5725,8 @@ function ReportsView({ vatHistory, taxHistory, t }: { vatHistory: any[], taxHist
 function NoticesView({ notices, onRefresh }: { notices: TaxNotice[], onRefresh: () => void }) {
   const [filter, setFilter] = useState<string>('All');
   const [searchTerm, setSearchTerm] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [summaries, setSummaries] = useState<Record<number, string>>({});
   const [loadingSummaries, setLoadingSummaries] = useState<Record<number, boolean>>({});
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -5690,7 +5765,12 @@ function NoticesView({ notices, onRefresh }: { notices: TaxNotice[], onRefresh: 
   const filteredNotices = notices.filter(n => {
     const matchesFilter = filter === 'All' || n.category === filter;
     const matchesSearch = n.title.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesFilter && matchesSearch;
+    
+    const noticeDate = new Date(n.createdAt);
+    const matchesStartDate = !startDate || noticeDate >= new Date(startDate);
+    const matchesEndDate = !endDate || noticeDate <= new Date(endDate);
+    
+    return matchesFilter && matchesSearch && matchesStartDate && matchesEndDate;
   });
 
   return (
@@ -5700,40 +5780,77 @@ function NoticesView({ notices, onRefresh }: { notices: TaxNotice[], onRefresh: 
         <p className="text-zinc-500 max-w-xl mx-auto text-lg">Stay updated with the latest circulars, SROs, and compliance updates from the National Board of Revenue (NBR).</p>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-6 items-center justify-between">
-        <div className="flex bg-zinc-100 p-1.5 rounded-2xl overflow-x-auto max-w-full">
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setFilter(cat)}
-              className={clsx(
-                "px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap",
-                filter === cat ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-400 hover:text-zinc-600"
-              )}
+      <div className="space-y-6">
+        <div className="flex flex-col md:flex-row gap-6 items-center justify-between">
+          <div className="flex bg-zinc-100 p-1.5 rounded-2xl overflow-x-auto max-w-full">
+            {categories.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setFilter(cat)}
+                className={clsx(
+                  "px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap",
+                  filter === cat ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-400 hover:text-zinc-600"
+                )}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-4 w-full md:w-auto">
+            <div className="relative flex-1 md:w-80">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" size={18} />
+              <input 
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search notices..."
+                className="w-full pl-12 pr-6 py-3.5 bg-zinc-100 border-none rounded-2xl focus:ring-4 focus:ring-brand-500/10 outline-none text-sm transition-all"
+              />
+            </div>
+            <button 
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="p-3.5 bg-zinc-100 text-zinc-600 rounded-2xl hover:bg-zinc-200 transition-all disabled:opacity-50"
+              title="Refresh from NBR"
             >
-              {cat}
+              <ArrowRightLeft size={20} className={cn(isRefreshing && "animate-spin")} />
             </button>
-          ))}
+          </div>
         </div>
-        <div className="flex items-center gap-4 w-full md:w-auto">
-          <div className="relative flex-1 md:w-80">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" size={18} />
+
+        <div className="flex flex-wrap items-center gap-4 bg-zinc-50 p-4 rounded-3xl border border-zinc-100">
+          <div className="flex items-center gap-2">
+            <Calendar size={16} className="text-zinc-400" />
+            <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Date Range:</span>
+          </div>
+          <div className="flex items-center gap-2">
             <input 
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search notices..."
-              className="w-full pl-12 pr-6 py-3.5 bg-zinc-100 border-none rounded-2xl focus:ring-4 focus:ring-brand-500/10 outline-none text-sm transition-all"
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="px-3 py-1.5 bg-white border border-zinc-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-brand-500/20"
+            />
+            <span className="text-zinc-300">to</span>
+            <input 
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="px-3 py-1.5 bg-white border border-zinc-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-brand-500/20"
             />
           </div>
-          <button 
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-            className="p-3.5 bg-zinc-100 text-zinc-600 rounded-2xl hover:bg-zinc-200 transition-all disabled:opacity-50"
-            title="Refresh from NBR"
-          >
-            <ArrowRightLeft size={20} className={cn(isRefreshing && "animate-spin")} />
-          </button>
+          {(startDate || endDate || filter !== 'All' || searchTerm) && (
+            <button 
+              onClick={() => {
+                setStartDate('');
+                setEndDate('');
+                setFilter('All');
+                setSearchTerm('');
+              }}
+              className="ml-auto text-[10px] font-black text-brand-600 uppercase tracking-widest hover:text-brand-700 transition-all flex items-center gap-1"
+            >
+              <X size={14} /> Clear Filters
+            </button>
+          )}
         </div>
       </div>
 

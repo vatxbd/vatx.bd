@@ -34,6 +34,13 @@ export default function ComplianceCalendar() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newDeadline, setNewDeadline] = useState({
+    title: '',
+    date: new Date().toISOString().split('T')[0],
+    category: 'VAT',
+    description: ''
+  });
 
   useEffect(() => {
     fetchDeadlines();
@@ -54,10 +61,31 @@ export default function ComplianceCalendar() {
 
   const toggleComplete = async (id: number) => {
     try {
-      await fetch(`/api/compliance/toggle/${id}`, { method: 'POST' });
+      await fetch(`/api/compliance/${id}`, { method: 'PATCH' });
       fetchDeadlines();
     } catch (err) {
       console.error('Failed to toggle deadline status', err);
+    }
+  };
+
+  const handleAddDeadline = async () => {
+    if (!newDeadline.title || !newDeadline.date) return;
+    try {
+      await fetch('/api/compliance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newDeadline),
+      });
+      setShowAddForm(false);
+      setNewDeadline({
+        title: '',
+        date: new Date().toISOString().split('T')[0],
+        category: 'VAT',
+        description: ''
+      });
+      fetchDeadlines();
+    } catch (err) {
+      console.error('Failed to add deadline', err);
     }
   };
 
@@ -139,6 +167,10 @@ export default function ComplianceCalendar() {
             <p className="text-zinc-500">Stay ahead of tax and VAT deadlines in Bangladesh</p>
           </div>
           <div className="flex items-center gap-2 bg-white p-2 rounded-2xl border border-zinc-100 shadow-sm">
+            <button onClick={() => setShowAddForm(!showAddForm)} className="p-2 bg-brand-50 text-brand-600 hover:bg-brand-100 rounded-xl transition-all flex items-center gap-2 px-4 font-bold text-xs">
+              <Plus size={16} /> New Deadline
+            </button>
+            <div className="h-8 w-px bg-zinc-100 mx-2" />
             <button onClick={prevMonth} className="p-2 hover:bg-zinc-50 rounded-xl transition-all"><ChevronLeft size={20} /></button>
             <span className="px-4 font-black text-sm uppercase tracking-widest text-zinc-900">
               {currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}
@@ -146,6 +178,78 @@ export default function ComplianceCalendar() {
             <button onClick={nextMonth} className="p-2 hover:bg-zinc-50 rounded-xl transition-all"><ChevronRight size={20} /></button>
           </div>
         </div>
+
+        <AnimatePresence>
+          {showAddForm && (
+            <motion.div 
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="overflow-hidden"
+            >
+              <div className="bg-white p-8 rounded-[2.5rem] border border-zinc-100 shadow-xl shadow-zinc-200/50 space-y-6 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-xs font-black text-zinc-400 uppercase tracking-widest">Deadline Title</label>
+                    <input 
+                      type="text"
+                      value={newDeadline.title}
+                      onChange={(e) => setNewDeadline({...newDeadline, title: e.target.value})}
+                      className="w-full p-4 bg-zinc-50 border border-zinc-100 rounded-2xl focus:ring-4 focus:ring-brand-500/5 outline-none transition-all"
+                      placeholder="e.g. VAT Return Submission"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-black text-zinc-400 uppercase tracking-widest">Deadline Date</label>
+                    <input 
+                      type="date"
+                      value={newDeadline.date}
+                      onChange={(e) => setNewDeadline({...newDeadline, date: e.target.value})}
+                      className="w-full p-4 bg-zinc-50 border border-zinc-100 rounded-2xl focus:ring-4 focus:ring-brand-500/5 outline-none transition-all"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-black text-zinc-400 uppercase tracking-widest">Category</label>
+                    <select 
+                      value={newDeadline.category}
+                      onChange={(e) => setNewDeadline({...newDeadline, category: e.target.value})}
+                      className="w-full p-4 bg-zinc-50 border border-zinc-100 rounded-2xl focus:ring-4 focus:ring-brand-500/5 outline-none transition-all appearance-none"
+                    >
+                      <option value="VAT">VAT</option>
+                      <option value="Tax">Income Tax</option>
+                      <option value="Customs">Customs</option>
+                      <option value="Corporate">Corporate</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-black text-zinc-400 uppercase tracking-widest">Description</label>
+                    <input 
+                      type="text"
+                      value={newDeadline.description}
+                      onChange={(e) => setNewDeadline({...newDeadline, description: e.target.value})}
+                      className="w-full p-4 bg-zinc-50 border border-zinc-100 rounded-2xl focus:ring-4 focus:ring-brand-500/5 outline-none transition-all"
+                      placeholder="Brief description..."
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end gap-3">
+                  <button 
+                    onClick={() => setShowAddForm(false)}
+                    className="px-6 py-3 text-zinc-500 font-bold hover:bg-zinc-50 rounded-xl transition-all"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    onClick={handleAddDeadline}
+                    className="px-8 py-3 bg-brand-600 text-white rounded-xl font-black hover:bg-brand-700 transition-all shadow-lg shadow-brand-600/20"
+                  >
+                    Add Deadline
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <div className="bg-white rounded-[2.5rem] border border-zinc-100 shadow-sm overflow-hidden">
           <div className="grid grid-cols-7 border-b border-zinc-100 bg-zinc-50/50">

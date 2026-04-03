@@ -214,6 +214,32 @@ db.exec(`
     createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 
+  CREATE TABLE IF NOT EXISTS tds_records (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    payeeName TEXT NOT NULL,
+    payeeTin TEXT,
+    paymentType TEXT,
+    invoiceNo TEXT,
+    invoiceDate DATE,
+    grossAmount REAL,
+    tdsRate REAL,
+    tdsAmount REAL,
+    challanNo TEXT,
+    challanDate DATE,
+    certificateNo TEXT,
+    status TEXT DEFAULT 'pending',
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS tds_rates (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    category TEXT NOT NULL,
+    section TEXT,
+    rateWithTin REAL,
+    rateWithoutTin REAL,
+    description TEXT
+  );
+
   CREATE TABLE IF NOT EXISTS compliance_deadlines (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     title TEXT NOT NULL,
@@ -281,6 +307,27 @@ db.exec(`
   INSERT INTO investment_partners (name, url, description)
   SELECT 'Delta Life', 'https://www.deltalife.org/', 'Insurance Solutions'
   WHERE NOT EXISTS (SELECT 1 FROM investment_partners WHERE name = 'Delta Life');
+
+  -- Seed TDS Rates
+  INSERT INTO tds_rates (category, section, rateWithTin, rateWithoutTin, description)
+  SELECT 'Supply of Goods', '52', 3, 6, 'TDS on supply of goods (general)'
+  WHERE NOT EXISTS (SELECT 1 FROM tds_rates WHERE category = 'Supply of Goods');
+
+  INSERT INTO tds_rates (category, section, rateWithTin, rateWithoutTin, description)
+  SELECT 'Execution of Contract', '52', 5, 10, 'TDS on execution of contract'
+  WHERE NOT EXISTS (SELECT 1 FROM tds_rates WHERE category = 'Execution of Contract');
+
+  INSERT INTO tds_rates (category, section, rateWithTin, rateWithoutTin, description)
+  SELECT 'Service Fees', '52AA', 10, 20, 'TDS on professional or technical service fees'
+  WHERE NOT EXISTS (SELECT 1 FROM tds_rates WHERE category = 'Service Fees');
+
+  INSERT INTO tds_rates (category, section, rateWithTin, rateWithoutTin, description)
+  SELECT 'House Rent', '53A', 5, 10, 'TDS on house rent'
+  WHERE NOT EXISTS (SELECT 1 FROM tds_rates WHERE category = 'House Rent');
+
+  INSERT INTO tds_rates (category, section, rateWithTin, rateWithoutTin, description)
+  SELECT 'Commission/Brokerage', '53E', 10, 20, 'TDS on commission or brokerage'
+  WHERE NOT EXISTS (SELECT 1 FROM tds_rates WHERE category = 'Commission/Brokerage');
 `);
 
 async function startServer() {
@@ -943,18 +990,97 @@ async function startServer() {
     res.json({ success: true });
   });
 
+  // TDS Routes
+  app.get("/api/tds", (req, res) => {
+    const records = db.prepare("SELECT * FROM tds_records ORDER BY createdAt DESC").all();
+    res.json(records);
+  });
+
+  app.post("/api/tds", (req, res) => {
+    const { payeeName, payeeTin, paymentType, invoiceNo, invoiceDate, grossAmount, tdsRate, tdsAmount } = req.body;
+    const result = db.prepare(`
+      INSERT INTO tds_records (payeeName, payeeTin, paymentType, invoiceNo, invoiceDate, grossAmount, tdsRate, tdsAmount, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')
+    `).run(payeeName, payeeTin, paymentType, invoiceNo, invoiceDate, grossAmount, tdsRate, tdsAmount);
+    res.json({ id: result.lastInsertRowid });
+  });
+
+  app.patch("/api/tds/:id", (req, res) => {
+    const { id } = req.params;
+    const { status, challanNo, challanDate, certificateNo } = req.body;
+    db.prepare("UPDATE tds_records SET status = ?, challanNo = ?, challanDate = ?, certificateNo = ? WHERE id = ?").run(status, challanNo, challanDate, certificateNo, id);
+    res.json({ success: true });
+  });
+
+  app.get("/api/tds/rates", (req, res) => {
+    const rates = db.prepare("SELECT * FROM tds_rates").all();
+    res.json(rates);
+  });
+
+  app.post("/api/tds/rates", (req, res) => {
+    const { category, section, rateWithTin, rateWithoutTin, description } = req.body;
+    if (!category) return res.status(400).json({ error: "Category is required" });
+    
+    const result = db.prepare(`
+      INSERT INTO tds_rates (category, section, rateWithTin, rateWithoutTin, description)
+      VALUES (?, ?, ?, ?, ?)
+    `).run(category, section, rateWithTin, rateWithoutTin, description);
+    
+    res.status(201).json({ id: result.lastInsertRowid });
+  });
+
+  app.put("/api/tds/rates/:id", (req, res) => {
+    const { id } = req.params;
+    const { category, section, rateWithTin, rateWithoutTin, description } = req.body;
+    
+    const result = db.prepare(`
+      UPDATE tds_rates 
+      SET category = ?, section = ?, rateWithTin = ?, rateWithoutTin = ?, description = ?
+      WHERE id = ?
+    `).run(category, section, rateWithTin, rateWithoutTin, description, id);
+    
+    if (result.changes === 0) return res.status(404).json({ error: "Rate not found" });
+    res.json({ success: true });
+  });
+
+  app.delete("/api/tds/rates/:id", (req, res) => {
+    const { id } = req.params;
+    const result = db.prepare("DELETE FROM tds_rates WHERE id = ?").run(id);
+    if (result.changes === 0) return res.status(404).json({ error: "Rate not found" });
+    res.json({ success: true });
+  });
+
   // Compliance Calendar Routes
   app.get("/api/compliance", (req, res) => {
     const deadlines = db.prepare("SELECT * FROM compliance_deadlines ORDER BY deadlineDate ASC").all();
     res.json(deadlines);
   });
 
-  app.post("/api/compliance/toggle/:id", (req, res) => {
+  app.post("/api/compliance", (req, res) => {
+    const { title, date, category, description } = req.body;
+    if (!title || !date) return res.status(400).json({ error: "Title and date are required" });
+    
+    try {
+      const result = db.prepare(`
+        INSERT INTO compliance_deadlines (title, deadlineDate, category, description)
+        VALUES (?, ?, ?, ?)
+      `).run(title, date, category, description);
+      
+      res.status(201).json({ id: result.lastInsertRowid, title, deadlineDate: date, category, description, isCompleted: 0 });
+    } catch (err) {
+      console.error("Failed to add compliance deadline", err);
+      res.status(500).json({ error: "Failed to add compliance deadline" });
+    }
+  });
+
+  app.patch("/api/compliance/:id", (req, res) => {
     const { id } = req.params;
     const current = db.prepare("SELECT isCompleted FROM compliance_deadlines WHERE id = ?").get(id) as any;
     if (!current) return res.status(404).json({ error: "Deadline not found" });
-    db.prepare("UPDATE compliance_deadlines SET isCompleted = ? WHERE id = ?").run(current.isCompleted ? 0 : 1, id);
-    res.json({ success: true, isCompleted: !current.isCompleted });
+    
+    const newStatus = current.isCompleted ? 0 : 1;
+    db.prepare("UPDATE compliance_deadlines SET isCompleted = ? WHERE id = ?").run(newStatus, id);
+    res.json({ success: true, isCompleted: newStatus });
   });
 
   // VAT Agent Routes

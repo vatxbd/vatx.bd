@@ -194,8 +194,10 @@ import ChallanVerification from './components/ChallanVerification';
 import MFSPayment from './components/MFSPayment';
 import TDSTracker from './components/TDSTracker';
 import OCRFormAutomation from './components/OCRFormAutomation';
+import OCRHistory from './components/OCRHistory';
+import TRMSAssistant from './components/TRMSAssistant';
 
-type Tab = 'dashboard' | 'vat' | 'tax' | 'tariff' | 'manifest' | 'reports' | 'blog' | 'tools' | 'ai' | 'invoice' | 'history' | 'notices' | 'rebate' | 'hscode' | 'subscription' | 'crypto-tax' | 'blockchain-verify' | 'tokenized-cert' | 'tax-advisory' | 'zakat' | 'final-tax' | 'developer' | 'documents' | 'critical-vat' | 'help' | 'social' | 'base' | 'x-scraper' | 'whatsapp' | 'odoo' | 'dropbox' | 'odoo-erp' | 'erpnext' | 'vat-agents' | 'live-agent' | 'donation' | 'vds-tracker' | 'tds-tracker' | 'compliance-calendar' | 'agent-marketplace' | 'challan-verify' | 'mfs-payment';
+type Tab = 'dashboard' | 'vat' | 'tax' | 'tariff' | 'manifest' | 'reports' | 'blog' | 'tools' | 'ai' | 'invoice' | 'history' | 'notices' | 'rebate' | 'hscode' | 'subscription' | 'crypto-tax' | 'blockchain-verify' | 'tokenized-cert' | 'tax-advisory' | 'zakat' | 'final-tax' | 'developer' | 'documents' | 'critical-vat' | 'help' | 'social' | 'base' | 'x-scraper' | 'whatsapp' | 'odoo' | 'dropbox' | 'odoo-erp' | 'erpnext' | 'vat-agents' | 'live-agent' | 'donation' | 'vds-tracker' | 'tds-tracker' | 'compliance-calendar' | 'agent-marketplace' | 'challan-verify' | 'mfs-payment' | 'trms-extractor';
 
 interface TaxNotice {
   id: number;
@@ -384,47 +386,80 @@ export default function App() {
                       </div>
                     </div>
                   )}
+                  
                   <div>
-                    <p className="px-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-4">Main Menu</p>
+                    <p className="px-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-4">Overview</p>
                     <div className="space-y-1">
-                      <NavItem icon={<BarChart3 size={18} />} label="Dashboard" active={activeTab === 'dashboard'} onClick={() => { setActiveTab('dashboard'); setIsMobileMenuOpen(false); }} />
-                      <NavItem icon={<FileSearch size={18} />} label="Document Centre" active={activeTab === 'documents'} onClick={() => { setActiveTab('documents'); setIsMobileMenuOpen(false); }} />
-                      <NavItem icon={<Receipt size={18} />} label="VAT Calculator" active={activeTab === 'vat'} onClick={() => { setActiveTab('vat'); setIsMobileMenuOpen(false); }} />
-                      <NavItem icon={<Calculator size={18} />} label="Tax Calculator" active={activeTab === 'tax'} onClick={() => { setActiveTab('tax'); setIsMobileMenuOpen(false); }} />
-                      <NavItem icon={<Share2 size={18} />} label="Social Integration" active={activeTab === 'social'} onClick={() => { setActiveTab('social'); setIsMobileMenuOpen(false); }} />
-                      <NavItem icon={<Twitter size={18} />} label="X Intelligence" active={activeTab === 'x-scraper'} onClick={() => { setActiveTab('x-scraper'); setIsMobileMenuOpen(false); }} />
-                      <NavItem icon={<MessageSquare size={18} />} label="WhatsApp Automation" active={activeTab === 'whatsapp'} onClick={() => { setActiveTab('whatsapp'); setIsMobileMenuOpen(false); }} />
+                      <NavItem icon={<BarChart3 size={18} />} label={t.dashboard} active={activeTab === 'dashboard'} onClick={() => { setActiveTab('dashboard'); setIsMobileMenuOpen(false); }} />
+                      <NavItem icon={<FileSearch size={18} />} label={t.documents} badge="Smart" active={activeTab === 'documents'} onClick={() => { setActiveTab('documents'); setIsMobileMenuOpen(false); }} />
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="px-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-4">AI Intelligence</p>
+                    <div className="space-y-1">
+                      <NavItem icon={<Sparkles size={18} />} label={t.ai} badge="AI" active={activeTab === 'ai'} onClick={() => { setActiveTab('ai'); setIsMobileMenuOpen(false); }} />
+                      <NavItem icon={<Bot size={18} className="text-indigo-500" />} label="Gemini Live" badge="Live" active={showLiveAgent} onClick={() => { setShowLiveAgent(true); setIsMobileMenuOpen(false); }} />
+                      <NavItem icon={<Sparkles size={18} />} label={t.advisory} active={activeTab === 'tax-advisory'} onClick={() => { setActiveTab('tax-advisory'); setIsMobileMenuOpen(false); }} />
+                      <NavItem icon={<Search size={18} />} label={t.hscode} active={activeTab === 'hscode'} onClick={() => { setActiveTab('hscode'); setIsMobileMenuOpen(false); }} />
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="px-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-4">Tax & VAT Hub</p>
+                    <div className="space-y-1">
+                      <NavItem icon={<Receipt size={18} />} label={t.vat} active={activeTab === 'vat'} onClick={() => { setActiveTab('vat'); setIsMobileMenuOpen(false); }} />
+                      <NavItem icon={<Calculator size={18} />} label={t.tax} active={activeTab === 'tax'} onClick={() => { setActiveTab('tax'); setIsMobileMenuOpen(false); }} />
+                      <NavItem icon={<FileSearch size={18} />} label={t.trmsExtractor} active={activeTab === 'trms-extractor'} onClick={() => { setActiveTab('trms-extractor'); setIsMobileMenuOpen(false); }} />
+                      <NavItem icon={<Shield size={18} />} label="চূড়ান্ত ট্যাক্স ক্যালকুলেশন" active={activeTab === 'final-tax'} onClick={() => { setActiveTab('final-tax'); setIsMobileMenuOpen(false); }} />
+                      <NavItem icon={<TrendingUp size={18} />} label={t.rebate} active={activeTab === 'rebate'} onClick={() => { setActiveTab('rebate'); setIsMobileMenuOpen(false); }} />
+                      <NavItem icon={<Coins size={18} />} label={t.zakat} active={activeTab === 'zakat'} onClick={() => { setActiveTab('zakat'); setIsMobileMenuOpen(false); }} />
+                      <NavItem icon={<Calculator size={18} />} label={t.criticalVat} active={activeTab === 'critical-vat'} onClick={() => { setActiveTab('critical-vat'); setIsMobileMenuOpen(false); }} />
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="px-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-4">Compliance Suite</p>
+                    <div className="space-y-1">
+                      <NavItem icon={<ClipboardCheck size={18} />} label="VDS Tracker" active={activeTab === 'vds-tracker'} onClick={() => { setActiveTab('vds-tracker'); setIsMobileMenuOpen(false); }} />
+                      <NavItem icon={<Calculator size={18} />} label="TDS Tracker" active={activeTab === 'tds-tracker'} onClick={() => { setActiveTab('tds-tracker'); setIsMobileMenuOpen(false); }} />
+                      <NavItem icon={<Calendar size={18} />} label="Compliance Calendar" active={activeTab === 'compliance-calendar'} onClick={() => { setActiveTab('compliance-calendar'); setIsMobileMenuOpen(false); }} />
+                      <NavItem icon={<ShieldCheck size={18} />} label="Challan Verify" active={activeTab === 'challan-verify'} onClick={() => { setActiveTab('challan-verify'); setIsMobileMenuOpen(false); }} />
+                      <NavItem icon={<Smartphone size={18} />} label={t['mfs-payment'] || "MFS Payment"} active={activeTab === 'mfs-payment'} onClick={() => { setActiveTab('mfs-payment'); setIsMobileMenuOpen(false); }} />
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="px-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-4">Business Suite</p>
+                    <div className="space-y-1">
+                      <NavItem icon={<Receipt size={18} />} label={t.invoice} active={activeTab === 'invoice'} onClick={() => { setActiveTab('invoice'); setIsMobileMenuOpen(false); }} />
                       <NavItem icon={<Settings size={18} />} label="Odoo Setup" active={activeTab === 'odoo'} onClick={() => { setActiveTab('odoo'); setIsMobileMenuOpen(false); }} />
-                      <NavItem icon={<Folder size={18} />} label="Dropbox Cloud" active={activeTab === 'dropbox'} onClick={() => { setActiveTab('dropbox'); setIsMobileMenuOpen(false); }} />
                       <NavItem icon={<Database size={18} />} label="Odoo ERP Integration" active={activeTab === 'odoo-erp'} onClick={() => { setActiveTab('odoo-erp'); setIsMobileMenuOpen(false); }} />
                       <NavItem icon={<Cpu size={18} />} label="ERPNext Automation" active={activeTab === 'erpnext'} onClick={() => { setActiveTab('erpnext'); setIsMobileMenuOpen(false); }} />
+                      <NavItem icon={<Folder size={18} />} label="Dropbox Cloud" active={activeTab === 'dropbox'} onClick={() => { setActiveTab('dropbox'); setIsMobileMenuOpen(false); }} />
+                      <NavItem icon={<Database size={18} />} label={t.base} active={activeTab === 'base'} onClick={() => { setActiveTab('base'); setIsMobileMenuOpen(false); }} />
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="px-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-4">Marketplace & Community</p>
+                    <div className="space-y-1">
                       <NavItem icon={<Building2 size={18} />} label={t.vatAgents} active={activeTab === 'vat-agents'} onClick={() => { setActiveTab('vat-agents'); setIsMobileMenuOpen(false); }} />
-                      <NavItem icon={<Shield size={18} />} label="চূড়ান্ত ট্যাক্স ক্যালকুলেশন" active={activeTab === 'final-tax'} onClick={() => { setActiveTab('final-tax'); setIsMobileMenuOpen(false); }} />
+                      <NavItem icon={<FileText size={18} />} label={t.blog} active={activeTab === 'blog'} onClick={() => { setActiveTab('blog'); setIsMobileMenuOpen(false); }} />
+                      <NavItem icon={<Bell size={18} />} label={t.notices} active={activeTab === 'notices'} onClick={() => { setActiveTab('notices'); setIsMobileMenuOpen(false); }} />
+                      <NavItem icon={<Heart size={18} />} label="Donation Centre" active={activeTab === 'donation'} onClick={() => { setActiveTab('donation'); setIsMobileMenuOpen(false); }} />
+                      <NavItem icon={<MessageSquare size={18} />} label="WhatsApp Automation" active={activeTab === 'whatsapp'} onClick={() => { setActiveTab('whatsapp'); setIsMobileMenuOpen(false); }} />
+                      <NavItem icon={<Share2 size={18} />} label={t.social} active={activeTab === 'social'} onClick={() => { setActiveTab('social'); setIsMobileMenuOpen(false); }} />
+                      <NavItem icon={<Twitter size={18} />} label="X Intelligence" active={activeTab === 'x-scraper'} onClick={() => { setActiveTab('x-scraper'); setIsMobileMenuOpen(false); }} />
                     </div>
                   </div>
+
                   <div>
-                    <p className="px-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-4">Intelligence</p>
+                    <p className="px-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-4">Web3 & Tech</p>
                     <div className="space-y-1">
-                      <NavItem icon={<Bot size={18} />} label="AI Tax Advisor" active={activeTab === 'ai'} onClick={() => { setActiveTab('ai'); setIsMobileMenuOpen(false); }} />
-                      <NavItem icon={<TrendingUp size={18} />} label="Tax Rebate Planner" active={activeTab === 'rebate'} onClick={() => { setActiveTab('rebate'); setIsMobileMenuOpen(false); }} />
-                      <NavItem icon={<Search size={18} />} label="HS Code Finder" active={activeTab === 'hscode'} onClick={() => { setActiveTab('hscode'); setIsMobileMenuOpen(false); }} />
-                      <NavItem icon={<Sparkles size={18} />} label="Tax Advisory" active={activeTab === 'tax-advisory'} onClick={() => { setActiveTab('tax-advisory'); setIsMobileMenuOpen(false); }} />
-                    </div>
-                  </div>
-                  <div>
-                    <p className="px-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-4">Business Tools</p>
-                    <div className="space-y-1">
-                      <NavItem icon={<Ship size={18} />} label="Tariff Calculator" active={activeTab === 'tariff'} onClick={() => { setActiveTab('tariff'); setIsMobileMenuOpen(false); }} />
-                      <NavItem icon={<ClipboardCheck size={18} />} label="Manifest & Cargo" active={activeTab === 'manifest'} onClick={() => { setActiveTab('manifest'); setIsMobileMenuOpen(false); }} />
-                      <NavItem icon={<Receipt size={18} />} label="Invoice Generator" active={activeTab === 'invoice'} onClick={() => { setActiveTab('invoice'); setIsMobileMenuOpen(false); }} />
-                      <NavItem icon={<Database size={18} />} label="Base (Database)" active={activeTab === 'base'} onClick={() => { setActiveTab('base'); setIsMobileMenuOpen(false); }} />
-                    </div>
-                  </div>
-                  <div>
-                    <p className="px-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-4">Resources</p>
-                    <div className="space-y-1">
-                      <NavItem icon={<History size={18} />} label={t.history} active={activeTab === 'history'} onClick={() => { setActiveTab('history'); setIsMobileMenuOpen(false); }} />
-                      <NavItem icon={<AlertCircle size={18} />} label={t.help} active={activeTab === 'help'} onClick={() => { setActiveTab('help'); setIsMobileMenuOpen(false); }} />
+                      <NavItem icon={<Coins size={18} />} label={t.crypto} active={activeTab === 'crypto-tax'} onClick={() => { setActiveTab('crypto-tax'); setIsMobileMenuOpen(false); }} />
+                      <NavItem icon={<Fingerprint size={18} />} label={t.blockchain} active={activeTab === 'blockchain-verify'} onClick={() => { setActiveTab('blockchain-verify'); setIsMobileMenuOpen(false); }} />
+                      <NavItem icon={<Ticket size={18} />} label={t.tokens} active={activeTab === 'tokenized-cert'} onClick={() => { setActiveTab('tokenized-cert'); setIsMobileMenuOpen(false); }} />
                     </div>
                   </div>
                 </nav>
@@ -487,8 +522,9 @@ export default function App() {
               />
             </div>
           )}
+
           <div className="pb-4">
-            <p className="px-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-4">Main Menu</p>
+            <p className="px-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-4">Overview</p>
             <NavItem 
               icon={<BarChart3 size={18} />} 
               label={t.dashboard} 
@@ -498,9 +534,44 @@ export default function App() {
             <NavItem 
               icon={<FileSearch size={18} />} 
               label={t.documents} 
+              badge="Smart"
               active={activeTab === 'documents'} 
               onClick={() => setActiveTab('documents')} 
             />
+          </div>
+
+          <div className="py-4 border-t border-zinc-50">
+            <p className="px-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-4">AI Intelligence</p>
+            <NavItem 
+              icon={<Sparkles size={18} />} 
+              label={t.ai} 
+              badge="AI"
+              active={activeTab === 'ai'} 
+              onClick={() => setActiveTab('ai')} 
+            />
+            <NavItem 
+              icon={<Bot size={18} className="text-indigo-500" />} 
+              label="Gemini Live" 
+              badge="Live"
+              active={showLiveAgent} 
+              onClick={() => setShowLiveAgent(true)} 
+            />
+            <NavItem 
+              icon={<Sparkles size={18} />} 
+              label={t.advisory} 
+              active={activeTab === 'tax-advisory'} 
+              onClick={() => setActiveTab('tax-advisory')} 
+            />
+            <NavItem 
+              icon={<Search size={18} />} 
+              label={t.hscode} 
+              active={activeTab === 'hscode'} 
+              onClick={() => setActiveTab('hscode')} 
+            />
+          </div>
+
+          <div className="py-4 border-t border-zinc-50">
+            <p className="px-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-4">Tax & VAT Hub</p>
             <NavItem 
               icon={<Receipt size={18} />} 
               label={t.vat} 
@@ -514,52 +585,10 @@ export default function App() {
               onClick={() => setActiveTab('tax')} 
             />
             <NavItem 
-              icon={<Share2 size={18} />} 
-              label={t.social} 
-              active={activeTab === 'social'} 
-              onClick={() => setActiveTab('social')} 
-            />
-            <NavItem 
-              icon={<Twitter size={18} />} 
-              label="X Intelligence" 
-              active={activeTab === 'x-scraper'} 
-              onClick={() => setActiveTab('x-scraper')} 
-            />
-            <NavItem 
-              icon={<MessageSquare size={18} />} 
-              label="WhatsApp Automation" 
-              active={activeTab === 'whatsapp'} 
-              onClick={() => setActiveTab('whatsapp')} 
-            />
-            <NavItem 
-              icon={<Settings size={18} />} 
-              label="Odoo Setup" 
-              active={activeTab === 'odoo'} 
-              onClick={() => setActiveTab('odoo')} 
-            />
-            <NavItem 
-              icon={<Folder size={18} />} 
-              label="Dropbox Cloud" 
-              active={activeTab === 'dropbox'} 
-              onClick={() => setActiveTab('dropbox')} 
-            />
-            <NavItem 
-              icon={<Database size={18} />} 
-              label="Odoo ERP Integration" 
-              active={activeTab === 'odoo-erp'} 
-              onClick={() => setActiveTab('odoo-erp')} 
-            />
-            <NavItem 
-              icon={<Cpu size={18} />} 
-              label="ERPNext Automation" 
-              active={activeTab === 'erpnext'} 
-              onClick={() => setActiveTab('erpnext')} 
-            />
-            <NavItem 
-              icon={<Building2 size={18} />} 
-              label={t.vatAgents} 
-              active={activeTab === 'vat-agents'} 
-              onClick={() => setActiveTab('vat-agents')} 
+              icon={<FileSearch size={18} />} 
+              label={t.trmsExtractor} 
+              active={activeTab === 'trms-extractor'} 
+              onClick={() => setActiveTab('trms-extractor')} 
             />
             <NavItem 
               icon={<Shield size={18} />} 
@@ -568,15 +597,27 @@ export default function App() {
               onClick={() => setActiveTab('final-tax')} 
             />
             <NavItem 
-              icon={<Code size={18} />} 
-              label="Open Source & Dev" 
-              active={activeTab === 'developer'} 
-              onClick={() => setActiveTab('developer')} 
+              icon={<TrendingUp size={18} />} 
+              label={t.rebate} 
+              active={activeTab === 'rebate'} 
+              onClick={() => setActiveTab('rebate')} 
+            />
+            <NavItem 
+              icon={<Coins size={18} />} 
+              label={t.zakat} 
+              active={activeTab === 'zakat'} 
+              onClick={() => setActiveTab('zakat')} 
+            />
+            <NavItem 
+              icon={<Calculator size={18} />} 
+              label={t.criticalVat} 
+              active={activeTab === 'critical-vat'} 
+              onClick={() => setActiveTab('critical-vat')} 
             />
           </div>
 
           <div className="py-4 border-t border-zinc-50">
-            <p className="px-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-4">Compliance</p>
+            <p className="px-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-4">Compliance Suite</p>
             <NavItem 
               icon={<ClipboardCheck size={18} />} 
               label="VDS Tracker" 
@@ -596,12 +637,6 @@ export default function App() {
               onClick={() => setActiveTab('compliance-calendar')} 
             />
             <NavItem 
-              icon={<Users size={18} />} 
-              label="Agent Marketplace" 
-              active={activeTab === 'agent-marketplace'} 
-              onClick={() => setActiveTab('agent-marketplace')} 
-            />
-            <NavItem 
               icon={<ShieldCheck size={18} />} 
               label="Challan Verify" 
               active={activeTab === 'challan-verify'} 
@@ -616,24 +651,36 @@ export default function App() {
           </div>
 
           <div className="py-4 border-t border-zinc-50">
-            <p className="px-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-4">Business Tools</p>
-            <NavItem 
-              icon={<Ship size={18} />} 
-              label={t.tariff} 
-              active={activeTab === 'tariff'} 
-              onClick={() => setActiveTab('tariff')} 
-            />
-            <NavItem 
-              icon={<ClipboardCheck size={18} />} 
-              label={t.manifest} 
-              active={activeTab === 'manifest'} 
-              onClick={() => setActiveTab('manifest')} 
-            />
+            <p className="px-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-4">Business Suite</p>
             <NavItem 
               icon={<Receipt size={18} />} 
               label={t.invoice} 
               active={activeTab === 'invoice'} 
               onClick={() => setActiveTab('invoice')} 
+            />
+            <NavItem 
+              icon={<Settings size={18} />} 
+              label="Odoo Setup" 
+              active={activeTab === 'odoo'} 
+              onClick={() => setActiveTab('odoo')} 
+            />
+            <NavItem 
+              icon={<Database size={18} />} 
+              label="Odoo ERP Integration" 
+              active={activeTab === 'odoo-erp'} 
+              onClick={() => setActiveTab('odoo-erp')} 
+            />
+            <NavItem 
+              icon={<Cpu size={18} />} 
+              label="ERPNext Automation" 
+              active={activeTab === 'erpnext'} 
+              onClick={() => setActiveTab('erpnext')} 
+            />
+            <NavItem 
+              icon={<Folder size={18} />} 
+              label="Dropbox Cloud" 
+              active={activeTab === 'dropbox'} 
+              onClick={() => setActiveTab('dropbox')} 
             />
             <NavItem 
               icon={<Database size={18} />} 
@@ -644,53 +691,13 @@ export default function App() {
           </div>
 
           <div className="py-4 border-t border-zinc-50">
-            <p className="px-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-4">{t.intelligence}</p>
+            <p className="px-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-4">Marketplace & Community</p>
             <NavItem 
-              icon={<Sparkles size={18} />} 
-              label={t.ai} 
-              active={activeTab === 'ai'} 
-              onClick={() => setActiveTab('ai')} 
+              icon={<Building2 size={18} />} 
+              label={t.vatAgents} 
+              active={activeTab === 'vat-agents'} 
+              onClick={() => setActiveTab('vat-agents')} 
             />
-            <NavItem 
-              icon={<Bot size={18} className="text-indigo-500" />} 
-              label="Gemini Live" 
-              active={showLiveAgent} 
-              onClick={() => setShowLiveAgent(true)} 
-            />
-            <NavItem 
-              icon={<TrendingUp size={18} />} 
-              label={t.rebate} 
-              active={activeTab === 'rebate'} 
-              onClick={() => setActiveTab('rebate')} 
-            />
-            <NavItem 
-              icon={<Search size={18} />} 
-              label={t.hscode} 
-              active={activeTab === 'hscode'} 
-              onClick={() => setActiveTab('hscode')} 
-            />
-            <NavItem 
-              icon={<Sparkles size={18} />} 
-              label={t.advisory} 
-              active={activeTab === 'tax-advisory'} 
-              onClick={() => setActiveTab('tax-advisory')} 
-            />
-            <NavItem 
-              icon={<Coins size={18} />} 
-              label={t.zakat} 
-              active={activeTab === 'zakat'} 
-              onClick={() => setActiveTab('zakat')} 
-            />
-            <NavItem 
-              icon={<Calculator size={18} />} 
-              label={t.criticalVat} 
-              active={activeTab === 'critical-vat'} 
-              onClick={() => setActiveTab('critical-vat')} 
-            />
-          </div>
-
-          <div className="py-4 border-t border-zinc-50">
-            <p className="px-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-4">{t.resources}</p>
             <NavItem 
               icon={<FileText size={18} />} 
               label={t.blog} 
@@ -710,6 +717,24 @@ export default function App() {
               onClick={() => setActiveTab('donation')} 
             />
             <NavItem 
+              icon={<MessageSquare size={18} />} 
+              label="WhatsApp Automation" 
+              active={activeTab === 'whatsapp'} 
+              onClick={() => setActiveTab('whatsapp')} 
+            />
+            <NavItem 
+              icon={<Share2 size={18} />} 
+              label={t.social} 
+              active={activeTab === 'social'} 
+              onClick={() => setActiveTab('social')} 
+            />
+            <NavItem 
+              icon={<Twitter size={18} />} 
+              label="X Intelligence" 
+              active={activeTab === 'x-scraper'} 
+              onClick={() => setActiveTab('x-scraper')} 
+            />
+            <NavItem 
               icon={<History size={18} />} 
               label={t.history} 
               active={activeTab === 'history'} 
@@ -721,10 +746,16 @@ export default function App() {
               active={activeTab === 'help'} 
               onClick={() => setActiveTab('help')} 
             />
+            <NavItem 
+              icon={<Code size={18} />} 
+              label="Open Source & Dev" 
+              active={activeTab === 'developer'} 
+              onClick={() => setActiveTab('developer')} 
+            />
           </div>
 
           <div className="py-4 border-t border-zinc-50">
-            <p className="px-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-4">{t.web3}</p>
+            <p className="px-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-4">Web3 & Tech</p>
             <NavItem 
               icon={<Coins size={18} />} 
               label={t.crypto} 
@@ -951,6 +982,7 @@ export default function App() {
             {activeTab === 'vat-agents' && <VatAgentPortal />}
             {activeTab === 'vat' && <VATCalculator onComplete={fetchHistory} />}
             {activeTab === 'tax' && <TaxCalculator onComplete={fetchHistory} />}
+            {activeTab === 'trms-extractor' && <TRMSAssistant />}
             {activeTab === 'tariff' && <TariffCalculator />}
             {activeTab === 'rebate' && <TaxRebatePlanner />}
             {activeTab === 'hscode' && <HSCodeFinder />}
@@ -998,7 +1030,7 @@ export default function App() {
   );
 }
 
-function NavItem({ icon, label, active, onClick }: { icon: React.ReactNode, label: string, active: boolean, onClick: () => void }) {
+function NavItem({ icon, label, active, onClick, badge }: { icon: React.ReactNode, label: string, active: boolean, onClick: () => void, badge?: string }) {
   return (
     <button 
       onClick={onClick}
@@ -1015,7 +1047,15 @@ function NavItem({ icon, label, active, onClick }: { icon: React.ReactNode, labe
       )}>
         {icon}
       </span>
-      <span className="relative z-10 tracking-tight">{label}</span>
+      <span className="relative z-10 tracking-tight flex-1 text-left">{label}</span>
+      {badge && (
+        <span className={cn(
+          "relative z-10 px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest",
+          active ? "bg-white/10 text-brand-400" : "bg-brand-50 text-brand-600"
+        )}>
+          {badge}
+        </span>
+      )}
       {active && (
         <motion.div 
           layoutId="active-pill"
@@ -1036,7 +1076,8 @@ function NavItem({ icon, label, active, onClick }: { icon: React.ReactNode, labe
 
 function DocumentCentre({ language, setLanguage, onInvoiceExtracted }: { language: Language, setLanguage: (l: Language) => void, onInvoiceExtracted: (data: any) => void }) {
   const t = translations[language];
-  const [activeSubTab, setActiveSubTab] = useState<'ocr' | 'automation'>('ocr');
+  const [activeSubTab, setActiveSubTab] = useState<'ocr' | 'automation' | 'history'>('ocr');
+  const [selectedHistoryEntry, setSelectedHistoryEntry] = useState<any>(null);
   const [files, setFiles] = useState<{ 
     file: File; 
     previewUrl?: string;
@@ -1410,7 +1451,10 @@ function DocumentCentre({ language, setLanguage, onInvoiceExtracted }: { languag
       <div className="flex justify-between items-center mb-8">
         <div className="flex bg-zinc-100 p-1.5 rounded-2xl w-fit">
           <button
-            onClick={() => setActiveSubTab('ocr')}
+            onClick={() => {
+              setSelectedHistoryEntry(null);
+              setActiveSubTab('ocr');
+            }}
             className={cn(
               "px-8 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2",
               activeSubTab === 'ocr' ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-400 hover:text-zinc-600"
@@ -1420,7 +1464,10 @@ function DocumentCentre({ language, setLanguage, onInvoiceExtracted }: { languag
             {t.smartOcr || 'Smart OCR'}
           </button>
           <button
-            onClick={() => setActiveSubTab('automation')}
+            onClick={() => {
+              setSelectedHistoryEntry(null);
+              setActiveSubTab('automation');
+            }}
             className={cn(
               "px-8 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2",
               activeSubTab === 'automation' ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-400 hover:text-zinc-600"
@@ -1428,6 +1475,16 @@ function DocumentCentre({ language, setLanguage, onInvoiceExtracted }: { languag
           >
             <Layers size={18} />
             {t.formAutomation || 'Form Automation'}
+          </button>
+          <button
+            onClick={() => setActiveSubTab('history')}
+            className={cn(
+              "px-8 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2",
+              activeSubTab === 'history' ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-400 hover:text-zinc-600"
+            )}
+          >
+            <History size={18} />
+            {language === 'bn' ? 'ইতিহাস' : 'History'}
           </button>
         </div>
 
@@ -1453,9 +1510,27 @@ function DocumentCentre({ language, setLanguage, onInvoiceExtracted }: { languag
         </div>
       </div>
 
-      {activeSubTab === 'automation' ? (
-        <OCRFormAutomation language={language} onInvoiceExtracted={onInvoiceExtracted} />
-      ) : (
+      {activeSubTab === 'automation' && (
+        <OCRFormAutomation 
+          language={language} 
+          onInvoiceExtracted={onInvoiceExtracted} 
+          initialData={selectedHistoryEntry}
+        />
+      )}
+
+      {activeSubTab === 'history' && (
+        <div className="max-w-4xl mx-auto w-full">
+          <OCRHistory 
+            language={language} 
+            onSelect={(data) => {
+              setSelectedHistoryEntry(data);
+              setActiveSubTab('automation');
+            }} 
+          />
+        </div>
+      )}
+
+      {activeSubTab === 'ocr' && (
         <>
           <SectionGuide 
             language={language}
@@ -4503,7 +4578,9 @@ function InvoiceGenerator({ initialData }: { initialData?: any }) {
   const [showMushak63, setShowMushak63] = useState(false);
   const [templateName, setTemplateName] = useState('');
   const [editingClient, setEditingClient] = useState<any>(null);
-  const [editClientForm, setEditClientForm] = useState({ name: '', address: '', bin: '' });
+  const [showAddClientModal, setShowAddClientModal] = useState(false);
+  const [editClientForm, setEditClientForm] = useState({ name: '', address: '', bin: '', mobile: '', tin: '' });
+  const [newClientForm, setNewClientForm] = useState({ name: '', address: '', bin: '', mobile: '', tin: '' });
   const [invoice, setInvoice] = useState(initialData || {
     number: `INV-${Date.now().toString().slice(-6)}`,
     date: new Date().toISOString().split('T')[0],
@@ -4545,23 +4622,31 @@ function InvoiceGenerator({ initialData }: { initialData?: any }) {
   };
 
   const saveClient = async () => {
-    if (!invoice.buyer.name.trim()) {
+    const clientToSave = showAddClientModal ? newClientForm : {
+      name: invoice.buyer.name,
+      address: invoice.buyer.address,
+      bin: invoice.buyer.bin,
+      mobile: '',
+      tin: ''
+    };
+
+    if (!clientToSave.name.trim()) {
       alert("Please enter a client name.");
       return;
     }
-    if (!confirm(`Are you sure you want to save "${invoice.buyer.name}" as a new client?`)) return;
+    
+    if (!showAddClientModal && !confirm(`Are you sure you want to save "${clientToSave.name}" as a new client?`)) return;
+    
     try {
       const res = await fetch('/api/clients', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: invoice.buyer.name,
-          address: invoice.buyer.address,
-          bin: invoice.buyer.bin
-        })
+        body: JSON.stringify(clientToSave)
       });
       if (res.ok) {
         alert("Client saved successfully!");
+        setShowAddClientModal(false);
+        setNewClientForm({ name: '', address: '', bin: '', mobile: '', tin: '' });
         fetchClients();
       }
     } catch (err) {
@@ -4593,7 +4678,7 @@ function InvoiceGenerator({ initialData }: { initialData?: any }) {
   const selectClient = (c: any) => {
     setInvoice({
       ...invoice,
-      buyer: { name: c.name, address: c.address, bin: c.bin }
+      buyer: { name: c.name, address: c.address, bin: c.bin || c.tin }
     });
   };
 
@@ -4822,8 +4907,9 @@ function InvoiceGenerator({ initialData }: { initialData?: any }) {
                           className="w-full px-5 py-3 bg-white border border-zinc-200 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/5 focus:border-brand-500 transition-all"
                         />
                       </div>
+                    <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">BIN / TIN</label>
+                        <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">BIN</label>
                         <input 
                           type="text"
                           value={editClientForm.bin}
@@ -4831,6 +4917,25 @@ function InvoiceGenerator({ initialData }: { initialData?: any }) {
                           className="w-full px-5 py-3 bg-white border border-zinc-200 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/5 focus:border-brand-500 transition-all"
                         />
                       </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">TIN</label>
+                        <input 
+                          type="text"
+                          value={editClientForm.tin}
+                          onChange={(e) => setEditClientForm({ ...editClientForm, tin: e.target.value })}
+                          className="w-full px-5 py-3 bg-white border border-zinc-200 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/5 focus:border-brand-500 transition-all"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Mobile Number</label>
+                      <input 
+                        type="text"
+                        value={editClientForm.mobile}
+                        onChange={(e) => setEditClientForm({ ...editClientForm, mobile: e.target.value })}
+                        className="w-full px-5 py-3 bg-white border border-zinc-200 rounded-xl outline-none focus:ring-4 focus:ring-brand-500/5 focus:border-brand-500 transition-all"
+                      />
+                    </div>
                     </div>
                     <div className="space-y-2">
                       <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Address</label>
@@ -4883,7 +4988,7 @@ function InvoiceGenerator({ initialData }: { initialData?: any }) {
                             <Copy size={18} />
                           </button>
                           <button 
-                            onClick={() => { setEditingClient(c); setEditClientForm({ name: c.name, address: c.address, bin: c.bin }); }}
+                            onClick={() => { setEditingClient(c); setEditClientForm({ name: c.name, address: c.address, bin: c.bin || '', mobile: c.mobile || '', tin: c.tin || '' }); }}
                             className="p-2.5 bg-white text-zinc-600 rounded-xl hover:text-blue-600 border border-zinc-100 shadow-sm transition-all"
                             title="Edit Client"
                           >
@@ -4911,6 +5016,101 @@ function InvoiceGenerator({ initialData }: { initialData?: any }) {
                   Close Directory
                 </button>
               )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Add Client Modal */}
+      <AnimatePresence>
+        {showAddClientModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowAddClientModal(false)}
+              className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative w-full max-w-xl bg-white rounded-[2.5rem] shadow-2xl overflow-hidden"
+            >
+              <div className="p-8 border-b border-zinc-50 flex items-center justify-between">
+                <h3 className="text-xl font-black text-zinc-900">Add New Client</h3>
+                <button onClick={() => setShowAddClientModal(false)} className="p-2 text-zinc-400 hover:text-zinc-900">
+                  <X size={24} />
+                </button>
+              </div>
+              <div className="p-8 space-y-6">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Client Name</label>
+                  <input 
+                    type="text" 
+                    value={newClientForm.name}
+                    onChange={(e) => setNewClientForm({ ...newClientForm, name: e.target.value })}
+                    className="w-full px-5 py-3 bg-zinc-50 border border-zinc-100 rounded-2xl outline-none focus:ring-4 focus:ring-brand-500/5 focus:border-brand-500 transition-all font-bold"
+                    placeholder="Enter client name"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Address</label>
+                  <textarea 
+                    value={newClientForm.address}
+                    onChange={(e) => setNewClientForm({ ...newClientForm, address: e.target.value })}
+                    className="w-full px-5 py-3 bg-zinc-50 border border-zinc-100 rounded-2xl outline-none focus:ring-4 focus:ring-brand-500/5 focus:border-brand-500 transition-all min-h-[100px] font-bold"
+                    placeholder="Enter address"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">BIN</label>
+                    <input 
+                      type="text" 
+                      value={newClientForm.bin}
+                      onChange={(e) => setNewClientForm({ ...newClientForm, bin: e.target.value })}
+                      className="w-full px-5 py-3 bg-zinc-50 border border-zinc-100 rounded-2xl outline-none focus:ring-4 focus:ring-brand-500/5 focus:border-brand-500 transition-all font-bold"
+                      placeholder="Enter BIN"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">TIN</label>
+                    <input 
+                      type="text" 
+                      value={newClientForm.tin}
+                      onChange={(e) => setNewClientForm({ ...newClientForm, tin: e.target.value })}
+                      className="w-full px-5 py-3 bg-zinc-50 border border-zinc-100 rounded-2xl outline-none focus:ring-4 focus:ring-brand-500/5 focus:border-brand-500 transition-all font-bold"
+                      placeholder="Enter TIN"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Mobile Number</label>
+                  <input 
+                    type="text" 
+                    value={newClientForm.mobile}
+                    onChange={(e) => setNewClientForm({ ...newClientForm, mobile: e.target.value })}
+                    className="w-full px-5 py-3 bg-zinc-50 border border-zinc-100 rounded-2xl outline-none focus:ring-4 focus:ring-brand-500/5 focus:border-brand-500 transition-all font-bold"
+                    placeholder="Enter mobile number"
+                  />
+                </div>
+                <div className="flex gap-3 pt-4">
+                  <button 
+                    onClick={() => setShowAddClientModal(false)}
+                    className="flex-1 py-4 bg-zinc-100 text-zinc-600 rounded-2xl font-bold hover:bg-zinc-200 transition-all text-sm"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    onClick={saveClient}
+                    className="flex-1 py-4 btn-primary text-sm"
+                  >
+                    Save Client
+                  </button>
+                </div>
+              </div>
             </motion.div>
           </div>
         )}
@@ -5022,6 +5222,12 @@ function InvoiceGenerator({ initialData }: { initialData?: any }) {
                     <h4 className="text-sm font-black text-zinc-900 uppercase tracking-widest">Buyer Details</h4>
                   </div>
                   <div className="flex gap-2">
+                    <button 
+                      onClick={() => setShowAddClientModal(true)}
+                      className="text-[10px] font-black text-brand-600 hover:text-brand-700 uppercase tracking-widest flex items-center gap-1.5 transition-colors"
+                    >
+                      <Plus size={14} /> Add New Client
+                    </button>
                     <button 
                       onClick={saveClient}
                       className="text-[10px] font-black text-blue-600 hover:text-blue-700 uppercase tracking-widest flex items-center gap-1.5 transition-colors"

@@ -8,15 +8,47 @@ const MFSPayment: React.FC = () => {
   const [method, setMethod] = useState<'bkash' | 'nagad' | 'rocket' | null>(null);
   const [step, setStep] = useState<'input' | 'method' | 'qr' | 'success'>('input');
   const [transactionId, setTransactionId] = useState<string>('');
+  const [paymentId, setPaymentId] = useState<number | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (step === 'input' && amount) setStep('method');
-    else if (step === 'method' && method) setStep('qr');
+    else if (step === 'method' && method) {
+      setIsProcessing(true);
+      try {
+        const response = await fetch('/api/payments/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ amount, method })
+        });
+        const data = await response.json();
+        if (data.success) {
+          setPaymentId(data.paymentId);
+          setStep('qr');
+        }
+      } catch (err) {
+        console.error("Payment Init Error:", err);
+      } finally {
+        setIsProcessing(false);
+      }
+    }
   };
 
-  const handlePaymentComplete = () => {
-    setTransactionId('TXN' + Math.random().toString(36).substring(2, 10).toUpperCase());
-    setStep('success');
+  const handlePaymentComplete = async () => {
+    if (!paymentId) return;
+    setIsProcessing(true);
+    try {
+      const response = await fetch(`/api/payments/verify/${paymentId}`);
+      const data = await response.json();
+      if (data.success && data.status === 'success') {
+        setTransactionId(data.transactionId);
+        setStep('success');
+      }
+    } catch (err) {
+      console.error("Payment Verify Error:", err);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
@@ -118,10 +150,10 @@ const MFSPayment: React.FC = () => {
               <button onClick={() => setStep('input')} className="flex-1 py-4 border border-gray-200 rounded-xl font-bold hover:bg-gray-50 transition-colors">Back</button>
               <button
                 onClick={handleNext}
-                disabled={!method}
-                className="flex-[2] bg-orange-600 text-white py-4 rounded-xl font-bold hover:bg-orange-700 transition-colors disabled:opacity-50"
+                disabled={!method || isProcessing}
+                className="flex-[2] bg-orange-600 text-white py-4 rounded-xl font-bold hover:bg-orange-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                Generate QR Code
+                {isProcessing ? <><span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span> Processing...</> : 'Generate QR Code'}
               </button>
             </div>
           </div>
@@ -144,9 +176,10 @@ const MFSPayment: React.FC = () => {
             </div>
             <button
               onClick={handlePaymentComplete}
-              className="w-full bg-green-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+              disabled={isProcessing}
+              className="w-full bg-green-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
             >
-              I have completed the payment <CheckCircle2 className="w-5 h-5" />
+              {isProcessing ? <><span className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></span> Verifying...</> : <>I have completed the payment <CheckCircle2 className="w-5 h-5" /></>}
             </button>
           </div>
         )}

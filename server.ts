@@ -124,6 +124,8 @@ db.exec(`
     name TEXT NOT NULL,
     address TEXT,
     bin TEXT,
+    mobile TEXT,
+    tin TEXT,
     createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 
@@ -185,6 +187,17 @@ db.exec(`
     platform TEXT NOT NULL,
     url TEXT NOT NULL,
     label TEXT,
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS payments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    amount REAL NOT NULL,
+    method TEXT NOT NULL,
+    status TEXT DEFAULT 'pending',
+    transactionId TEXT,
+    paymentUrl TEXT,
+    merchantInvoiceNumber TEXT,
     createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 
@@ -329,6 +342,14 @@ db.exec(`
   SELECT 'Commission/Brokerage', '53E', 10, 20, 'TDS on commission or brokerage'
   WHERE NOT EXISTS (SELECT 1 FROM tds_rates WHERE category = 'Commission/Brokerage');
 `);
+
+// Migration for existing clients table
+try {
+  db.prepare("ALTER TABLE clients ADD COLUMN mobile TEXT").run();
+} catch (e) {}
+try {
+  db.prepare("ALTER TABLE clients ADD COLUMN tin TEXT").run();
+} catch (e) {}
 
 async function startServer() {
   const app = express();
@@ -596,6 +617,100 @@ async function startServer() {
     res.json({ success: true, id: result.lastInsertRowid });
   });
 
+  // MFS Payment Routes
+  app.post("/api/payments/create", async (req, res) => {
+    const { amount, method } = req.body;
+    const merchantInvoiceNumber = `INV-${Date.now()}`;
+
+    try {
+      // Store pending payment
+      const stmt = db.prepare(`
+        INSERT INTO payments (amount, method, status, merchantInvoiceNumber)
+        VALUES (?, ?, ?, ?)
+      `);
+      const result = stmt.run(amount, method, 'pending', merchantInvoiceNumber);
+      const paymentId = result.lastInsertRowid;
+
+      let paymentUrl = "";
+
+      if (method === 'bkash') {
+        const bkashBaseUrl = process.env.BKASH_BASE_URL;
+        if (!bkashBaseUrl) {
+          // Fallback for demo if no credentials
+          paymentUrl = `/payment/bkash/mock?id=${paymentId}&amount=${amount}`;
+        } else {
+          // Real bKash integration logic would go here
+          // 1. Get Token
+          // 2. Create Payment
+          // For now, we'll provide the mock URL but structure it for real use
+          paymentUrl = `/payment/bkash/mock?id=${paymentId}&amount=${amount}`;
+        }
+      } else if (method === 'nagad') {
+        paymentUrl = `/payment/nagad/mock?id=${paymentId}&amount=${amount}`;
+      } else if (method === 'rocket') {
+        paymentUrl = `/payment/rocket/mock?id=${paymentId}&amount=${amount}`;
+      }
+
+      db.prepare("UPDATE payments SET paymentUrl = ? WHERE id = ?").run(paymentUrl, paymentId);
+
+      res.json({ success: true, paymentId, paymentUrl, merchantInvoiceNumber });
+    } catch (error) {
+      console.error("Payment Creation Error:", error);
+      res.status(500).json({ error: "Failed to initialize payment" });
+    }
+  });
+
+  app.get("/api/payments/verify/:id", async (req, res) => {
+    const { id } = req.params;
+    const payment = db.prepare("SELECT * FROM payments WHERE id = ?").get(id) as any;
+
+    if (!payment) return res.status(404).json({ error: "Payment not found" });
+
+    try {
+      // In a real integration, we would call the MFS provider's verify API here
+      // For this implementation, we'll simulate a successful verification if it's still pending
+      if (payment.status === 'pending') {
+        const transactionId = 'TXN' + Math.random().toString(36).substring(2, 10).toUpperCase();
+        db.prepare("UPDATE payments SET status = 'success', transactionId = ? WHERE id = ?")
+          .run(transactionId, id);
+        
+        return res.json({ success: true, status: 'success', transactionId });
+      }
+
+      res.json({ success: true, status: payment.status, transactionId: payment.transactionId });
+    } catch (error) {
+      console.error("Payment Verification Error:", error);
+      res.status(500).json({ error: "Failed to verify payment" });
+    }
+  });
+
+  // OCR History Routes
+  app.get("/api/ocr/history", (req, res) => {
+    const history = db.prepare("SELECT * FROM ocr_entries ORDER BY createdAt DESC").all();
+    res.json(history.map((h: any) => ({
+      ...h,
+      extractedData: JSON.parse(h.extractedData || '{}')
+    })));
+  });
+
+  app.post("/api/ocr/save", (req, res) => {
+    const { documentType, fields, items, imageUrl } = req.body;
+    const extractedData = JSON.stringify({ documentType, fields, items });
+    
+    const stmt = db.prepare(`
+      INSERT INTO ocr_entries (sourceType, extractedData, imageUrl, status)
+      VALUES (?, ?, ?, ?)
+    `);
+    const result = stmt.run('document_centre', extractedData, imageUrl || '', 'completed');
+    res.json({ id: result.lastInsertRowid, success: true });
+  });
+
+  app.delete("/api/ocr/history/:id", (req, res) => {
+    const { id } = req.params;
+    db.prepare("DELETE FROM ocr_entries WHERE id = ?").run(id);
+    res.json({ success: true });
+  });
+
   // Blog Routes
   app.get("/api/blog", (req, res) => {
     const posts = db.prepare("SELECT * FROM blog_posts ORDER BY createdAt DESC").all();
@@ -658,10 +773,10 @@ async function startServer() {
     const errors = validationResult(req);
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
-    const { name, address, bin } = req.body;
-    const stmt = db.prepare("INSERT INTO clients (name, address, bin) VALUES (?, ?, ?)");
-    const result = stmt.run(name, address, bin);
-    res.json({ id: result.lastInsertRowid, name, address, bin });
+    const { name, address, bin, mobile, tin } = req.body;
+    const stmt = db.prepare("INSERT INTO clients (name, address, bin, mobile, tin) VALUES (?, ?, ?, ?, ?)");
+    const result = stmt.run(name, address, bin, mobile, tin);
+    res.json({ id: result.lastInsertRowid, name, address, bin, mobile, tin });
   });
 
   app.delete("/api/clients/:id", (req, res) => {
@@ -672,8 +787,8 @@ async function startServer() {
 
   app.patch("/api/clients/:id", (req, res) => {
     const { id } = req.params;
-    const { name, address, bin } = req.body;
-    db.prepare("UPDATE clients SET name = ?, address = ?, bin = ? WHERE id = ?").run(name, address, bin, id);
+    const { name, address, bin, mobile, tin } = req.body;
+    db.prepare("UPDATE clients SET name = ?, address = ?, bin = ?, mobile = ?, tin = ? WHERE id = ?").run(name, address, bin, mobile, tin, id);
     res.json({ success: true });
   });
 

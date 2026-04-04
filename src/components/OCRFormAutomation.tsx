@@ -29,22 +29,34 @@ interface FormField {
   value: string;
 }
 
+interface ExtractedItem {
+  desc: string;
+  qty: number;
+  price: number;
+  vatRate: number;
+}
+
 interface OCRResult {
   documentType: string;
   fields: FormField[];
+  items?: ExtractedItem[];
 }
 
 interface OCRFormAutomationProps {
   language?: Language;
   onInvoiceExtracted?: (data: any) => void;
+  initialData?: any;
 }
 
-export default function OCRFormAutomation({ language = 'en', onInvoiceExtracted }: OCRFormAutomationProps) {
+export default function OCRFormAutomation({ language = 'en', onInvoiceExtracted, initialData }: OCRFormAutomationProps) {
   const t = translations[language];
   const [mode, setMode] = useState<'single' | 'template'>('single');
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isTypeConfirmed, setIsTypeConfirmed] = useState(false);
+  const [isTypeConfirmed, setIsTypeConfirmed] = useState(!!initialData);
+  const [extractedItems, setExtractedItems] = useState<ExtractedItem[]>(initialData?.items || []);
+  const [documentType, setDocumentType] = useState<string>(initialData?.documentType || '');
+  const [fields, setFields] = useState<FormField[]>(initialData?.fields || []);
   
   // Single mode state
   const [singleFile, setSingleFile] = useState<File | null>(null);
@@ -57,8 +69,6 @@ export default function OCRFormAutomation({ language = 'en', onInvoiceExtracted 
   const [dataPreview, setDataPreview] = useState<string | null>(null);
   
   // Form state
-  const [documentType, setDocumentType] = useState('');
-  const [fields, setFields] = useState<FormField[]>([]);
 
   const onDropSingle = useCallback((acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
@@ -133,12 +143,25 @@ export default function OCRFormAutomation({ language = 'en', onInvoiceExtracted 
           inlineData: { mimeType: singleFile.type, data: base64 }
         });
         prompt = `Analyze this document image. Identify the document type and extract all relevant fields and their values. 
+        If the document is an INVOICE or VAT INVOICE (like Mushak 6.3), specifically extract:
+        - Vendor/Seller Name
+        - Vendor/Seller BIN (Business Identification Number)
+        - Invoice Number
+        - Invoice Date
+        - Subtotal (excluding VAT)
+        - VAT Amount
+        - Grand Total (including VAT)
+        - Line Items (Description, Quantity, Unit Price, VAT Rate, Line Total)
+
         Return a JSON object with:
         {
           "documentType": "string",
           "fields": [
             { "id": "unique_id", "label": "Field Name", "value": "Extracted Value" }
-          ]
+          ],
+          "items": [
+            { "desc": "Item Description", "qty": number, "price": number, "vatRate": number }
+          ] (optional, only for invoices)
         }`;
       } else if (mode === 'template' && templateFile && dataFile) {
         const templateBase64 = await fileToBase64(templateFile);
@@ -165,7 +188,10 @@ export default function OCRFormAutomation({ language = 'en', onInvoiceExtracted 
           "documentType": "string (the type of the template form)",
           "fields": [
             { "id": "unique_id", "label": "Template Field Name", "value": "Mapped Value from Source" }
-          ]
+          ],
+          "items": [
+            { "desc": "Item Description", "qty": number, "price": number, "vatRate": number }
+          ] (optional, only if the template is an invoice)
         }`;
       }
 
@@ -180,6 +206,7 @@ export default function OCRFormAutomation({ language = 'en', onInvoiceExtracted 
       const result = JSON.parse(response.text || "{}");
       setDocumentType(result.documentType || 'Extracted Document');
       setFields(result.fields || []);
+      setExtractedItems(result.items || []);
       setIsTypeConfirmed(false);
     } catch (err) {
       console.error("OCR Error:", err);
@@ -202,31 +229,61 @@ export default function OCRFormAutomation({ language = 'en', onInvoiceExtracted 
     setFields(fields.filter(f => f.id !== id));
   };
 
+  const saveOCRResult = async () => {
+    try {
+      await fetch('/api/ocr/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          documentType,
+          fields,
+          items: extractedItems,
+          imageUrl: '' // In a real app, we'd upload the image to a bucket first
+        })
+      });
+    } catch (err) {
+      console.error("Failed to save OCR result:", err);
+    }
+  };
+
   const handleConfirmType = () => {
     setIsTypeConfirmed(true);
+    saveOCRResult();
     if (documentType.toLowerCase().includes('invoice') && onInvoiceExtracted) {
       // Map fields to invoice structure
+      const findField = (keywords: string[]) => 
+        fields.find(f => keywords.some(k => f.label.toLowerCase().includes(k)))?.value;
+
       const invoiceData: any = {
-        number: fields.find(f => f.label.toLowerCase().includes('number'))?.value || `INV-${Date.now().toString().slice(-6)}`,
-        date: fields.find(f => f.label.toLowerCase().includes('date'))?.value || new Date().toISOString().split('T')[0],
+        number: findField(['number', 'inv#', 'invoice no']) || `INV-${Date.now().toString().slice(-6)}`,
+        date: findField(['date', 'issue date']) || new Date().toISOString().split('T')[0],
         seller: {
-          name: fields.find(f => f.label.toLowerCase().includes('seller') || f.label.toLowerCase().includes('from'))?.value || '',
-          address: '',
-          bin: fields.find(f => f.label.toLowerCase().includes('bin'))?.value || ''
+          name: findField(['seller', 'vendor', 'from', 'supplier']) || '',
+          address: findField(['address', 'location', 'street']) || '',
+          bin: findField(['bin', 'vat reg', 'mushak']) || ''
         },
         buyer: {
-          name: fields.find(f => f.label.toLowerCase().includes('buyer') || f.label.toLowerCase().includes('to') || f.label.toLowerCase().includes('customer'))?.value || '',
-          address: '',
-          bin: ''
+          name: findField(['buyer', 'to', 'customer', 'client']) || '',
+          address: findField(['buyer address', 'ship to', 'bill to']) || '',
+          bin: findField(['buyer bin', 'tin', 'customer bin']) || ''
         },
-        items: fields.filter(f => f.label.toLowerCase().includes('item') || f.label.toLowerCase().includes('description')).map((f, i) => ({
-          id: i + 1,
-          desc: f.value,
-          category: 'Standard Goods/Services',
-          qty: 1,
-          price: 0,
-          vatRate: 15
-        }))
+        items: extractedItems.length > 0 
+          ? extractedItems.map((item, i) => ({
+              id: i + 1,
+              desc: item.desc,
+              category: 'Standard Goods/Services',
+              qty: item.qty || 1,
+              price: item.price || 0,
+              vatRate: item.vatRate || 15
+            }))
+          : fields.filter(f => f.label.toLowerCase().includes('item') || f.label.toLowerCase().includes('description')).map((f, i) => ({
+              id: i + 1,
+              desc: f.value,
+              category: 'Standard Goods/Services',
+              qty: 1,
+              price: 0,
+              vatRate: 15
+            }))
       };
       
       // If no items found, add a default one
@@ -608,6 +665,27 @@ export default function OCRFormAutomation({ language = 'en', onInvoiceExtracted 
                 </div>
               ))}
             </div>
+
+            {extractedItems.length > 0 && (
+              <div className="mt-12 pt-8 border-t border-zinc-100">
+                <h4 className="text-xs font-black text-zinc-400 uppercase tracking-widest mb-6">Extracted Line Items</h4>
+                <div className="space-y-4">
+                  {extractedItems.map((item, i) => (
+                    <div key={i} className="flex items-center justify-between p-4 bg-zinc-50 rounded-2xl border border-zinc-100">
+                      <div className="flex-1">
+                        <p className="text-sm font-bold text-zinc-900">{item.desc}</p>
+                        <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mt-1">
+                          Qty: {item.qty} × {item.price} | VAT: {item.vatRate}%
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-black text-zinc-900">{(item.qty * item.price * (1 + item.vatRate / 100)).toFixed(2)}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="mt-12 pt-8 border-t border-zinc-100 text-center hidden print:block">
               <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest">{t.verificationId}: {Math.random().toString(36).substring(7).toUpperCase()}</p>

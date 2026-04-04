@@ -142,6 +142,9 @@ export const translations = {
     ocrStep3: "AI will automatically extract required information for the NBR portal.",
     ocrStep4: "Verify the data and click 'Generate NBR Script'.",
     ocrStep5: "Go to the NBR portal (trms.nbr.gov.bd) and paste the script into the browser console.",
+    trmsExtractor: "TRMS Data Extractor",
+    trmsAssistant: "TRMS Assistant",
+    trmsDesc: "Extract tax data for NBR TRMS form",
   },
   bn: {
     dashboard: "ড্যাশবোর্ড",
@@ -284,5 +287,8 @@ export const translations = {
     ocrStep3: "এআই স্বয়ংক্রিয়ভাবে এনবিআর পোর্টালের জন্য প্রয়োজনীয় তথ্য সংগ্রহ করবে।",
     ocrStep4: "তথ্য যাচাই করে 'Generate NBR Script' বাটনে ক্লিক করুন।",
     ocrStep5: "এনবিআর পোর্টালে (trms.nbr.gov.bd) গিয়ে ব্রাউজার কনসোলে স্ক্রিপ্টটি পেস্ট করুন।",
+    trmsExtractor: "টিআরএমএস ডেটা এক্সট্রাক্টর",
+    trmsAssistant: "টিআরএমএস অ্যাসিস্ট্যান্ট",
+    trmsDesc: "এনবিআর টিআরএমএস ফর্মের জন্য ট্যাক্স ডেটা সংগ্রহ করুন",
   }
 };

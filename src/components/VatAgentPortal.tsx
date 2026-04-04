@@ -73,7 +73,7 @@ export default function VatAgentPortal() {
     { name: "Bengal Steel Works", bin: "000456789-0401", contact: "Kamrul Islam", circle: "Dhaka North", status: "active" },
   ]);
 
-  const [newClient, setNewClient] = useState({ name: '', bin: '', contact: '', circle: '' });
+  const [newClient, setNewClient] = useState({ name: '', bin: '', contact: '', circle: '', address: '', mobile: '', tin: '' });
   const [clientSearch, setClientSearch] = useState('');
 
   const filteredClients = clients.filter(c => 
@@ -85,7 +85,7 @@ export default function VatAgentPortal() {
     e.preventDefault();
     if (!newClient.name || !newClient.bin) return;
     setClients([...clients, { ...newClient, status: 'active' }]);
-    setNewClient({ name: '', bin: '', contact: '', circle: '' });
+    setNewClient({ name: '', bin: '', contact: '', circle: '', address: '', mobile: '', tin: '' });
     setShowAddClient(false);
   };
 
@@ -577,7 +577,7 @@ export default function VatAgentPortal() {
                   <X size={24} />
                 </button>
               </div>
-              <form onSubmit={handleAddClient} className="p-8 space-y-6">
+              <form onSubmit={handleAddClient} className="p-8 space-y-6 max-h-[70vh] overflow-y-auto scrollbar-hide">
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Business Name</label>
                   <input 
@@ -586,6 +586,16 @@ export default function VatAgentPortal() {
                     value={newClient.name}
                     onChange={e => setNewClient({...newClient, name: e.target.value})}
                     className="w-full px-6 py-4 bg-zinc-50 border border-zinc-100 rounded-2xl font-bold outline-none focus:ring-4 focus:ring-cyan-500/10" 
+                    placeholder="Enter business name"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Address</label>
+                  <textarea 
+                    value={newClient.address}
+                    onChange={e => setNewClient({...newClient, address: e.target.value})}
+                    className="w-full px-6 py-4 bg-zinc-50 border border-zinc-100 rounded-2xl font-bold outline-none focus:ring-4 focus:ring-cyan-500/10 min-h-[100px] resize-none" 
+                    placeholder="Enter full address"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-6">
@@ -597,6 +607,29 @@ export default function VatAgentPortal() {
                       value={newClient.bin}
                       onChange={e => setNewClient({...newClient, bin: e.target.value})}
                       className="w-full px-6 py-4 bg-zinc-50 border border-zinc-100 rounded-2xl font-bold outline-none focus:ring-4 focus:ring-cyan-500/10" 
+                      placeholder="Enter BIN"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">TIN</label>
+                    <input 
+                      type="text" 
+                      value={newClient.tin}
+                      onChange={e => setNewClient({...newClient, tin: e.target.value})}
+                      className="w-full px-6 py-4 bg-zinc-50 border border-zinc-100 rounded-2xl font-bold outline-none focus:ring-4 focus:ring-cyan-500/10" 
+                      placeholder="Enter TIN"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Mobile Number</label>
+                    <input 
+                      type="text" 
+                      value={newClient.mobile}
+                      onChange={e => setNewClient({...newClient, mobile: e.target.value})}
+                      className="w-full px-6 py-4 bg-zinc-50 border border-zinc-100 rounded-2xl font-bold outline-none focus:ring-4 focus:ring-cyan-500/10" 
+                      placeholder="Enter mobile number"
                     />
                   </div>
                   <div className="space-y-2">
@@ -606,6 +639,7 @@ export default function VatAgentPortal() {
                       value={newClient.contact}
                       onChange={e => setNewClient({...newClient, contact: e.target.value})}
                       className="w-full px-6 py-4 bg-zinc-50 border border-zinc-100 rounded-2xl font-bold outline-none focus:ring-4 focus:ring-cyan-500/10" 
+                      placeholder="Enter contact name"
                     />
                   </div>
                 </div>
@@ -616,6 +650,7 @@ export default function VatAgentPortal() {
                     value={newClient.circle}
                     onChange={e => setNewClient({...newClient, circle: e.target.value})}
                     className="w-full px-6 py-4 bg-zinc-50 border border-zinc-100 rounded-2xl font-bold outline-none focus:ring-4 focus:ring-cyan-500/10" 
+                    placeholder="Enter circle or area"
                   />
                 </div>
                 <div className="pt-4 flex gap-4">

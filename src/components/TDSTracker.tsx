@@ -27,6 +27,8 @@ interface TDSRecord {
   id: number;
   payeeName: string;
   payeeTin: string;
+  payeeBin: string;
+  payeeCategory: string;
   paymentType: string;
   invoiceNo: string;
   invoiceDate: string;
@@ -35,6 +37,8 @@ interface TDSRecord {
   tdsAmount: number;
   challanNo: string;
   challanDate: string;
+  bankName: string;
+  bankBranch: string;
   certificateNo: string;
   status: 'pending' | 'paid' | 'certificate_issued';
   createdAt: string;
@@ -54,6 +58,9 @@ export default function TDSTracker() {
   const [rates, setRates] = useState<TDSRate[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
   const [showRates, setShowRates] = useState(false);
+  const [showQuickCalc, setShowQuickCalc] = useState(false);
+  const [calcGross, setCalcGross] = useState<number>(0);
+  const [calcRate, setCalcRate] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isManagingRates, setIsManagingRates] = useState(false);
   const [editingRate, setEditingRate] = useState<TDSRate | null>(null);
@@ -67,6 +74,8 @@ export default function TDSTracker() {
   const [newRecord, setNewRecord] = useState({
     payeeName: '',
     payeeTin: '',
+    payeeBin: '',
+    payeeCategory: 'Company',
     paymentType: 'Supply of Goods',
     invoiceNo: '',
     invoiceDate: new Date().toISOString().split('T')[0],
@@ -74,6 +83,15 @@ export default function TDSTracker() {
     tdsRate: 3,
     tdsAmount: 0,
   });
+
+  const stats = {
+    totalGross: records.reduce((sum, r) => sum + r.grossAmount, 0),
+    totalTDS: records.reduce((sum, r) => sum + r.tdsAmount, 0),
+    pendingCount: records.filter(r => r.status === 'pending').length,
+    paidCount: records.filter(r => r.status === 'paid').length,
+  };
+
+  const calcResult = (calcGross * calcRate) / 100;
 
   useEffect(() => {
     fetchRecords();
@@ -156,6 +174,8 @@ export default function TDSTracker() {
       setNewRecord({
         payeeName: '',
         payeeTin: '',
+        payeeBin: '',
+        payeeCategory: 'Company',
         paymentType: 'Supply of Goods',
         invoiceNo: '',
         invoiceDate: new Date().toISOString().split('T')[0],
@@ -172,12 +192,21 @@ export default function TDSTracker() {
   const updateStatus = async (record: TDSRecord, newStatus: TDSRecord['status']) => {
     let challanNo = record.challanNo;
     let challanDate = record.challanDate;
+    let bankName = record.bankName;
+    let bankBranch = record.bankBranch;
     let certificateNo = record.certificateNo;
 
     if (newStatus === 'paid' && !challanNo) {
-      const input = prompt("Enter i-Challan Number:");
-      if (!input) return;
-      challanNo = input;
+      const cNo = prompt("Enter i-Challan Number:");
+      if (!cNo) return;
+      challanNo = cNo;
+      
+      const bName = prompt("Enter Bank Name:", "Sonali Bank PLC");
+      if (bName) bankName = bName;
+      
+      const bBranch = prompt("Enter Branch Name:");
+      if (bBranch) bankBranch = bBranch;
+      
       challanDate = new Date().toISOString().split('T')[0];
     }
 
@@ -191,7 +220,7 @@ export default function TDSTracker() {
       await fetch(`/api/tds/${record.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus, challanNo, challanDate, certificateNo }),
+        body: JSON.stringify({ status: newStatus, challanNo, challanDate, certificateNo, bankName, bankBranch }),
       });
       fetchRecords();
     } catch (err) {
@@ -208,7 +237,9 @@ export default function TDSTracker() {
 
     const headers = [
       'Payee Name',
+      'Payee Category',
       'Payee TIN',
+      'Payee BIN',
       'Payment Type',
       'Invoice No',
       'Invoice Date',
@@ -217,6 +248,8 @@ export default function TDSTracker() {
       'TDS Amount',
       'Challan No',
       'Challan Date',
+      'Bank Name',
+      'Bank Branch',
       'Certificate No',
       'Status',
       'Created At'
@@ -226,7 +259,9 @@ export default function TDSTracker() {
       headers.join(','),
       ...records.map(record => [
         `"${record.payeeName}"`,
+        `"${record.payeeCategory}"`,
         `"${record.payeeTin}"`,
+        `"${record.payeeBin || ''}"`,
         `"${record.paymentType}"`,
         `"${record.invoiceNo}"`,
         `"${record.invoiceDate}"`,
@@ -235,6 +270,8 @@ export default function TDSTracker() {
         record.tdsAmount,
         `"${record.challanNo || ''}"`,
         `"${record.challanDate || ''}"`,
+        `"${record.bankName || ''}"`,
+        `"${record.bankBranch || ''}"`,
         `"${record.certificateNo || ''}"`,
         `"${record.status}"`,
         `"${record.createdAt}"`
@@ -264,6 +301,16 @@ export default function TDSTracker() {
         </div>
         <div className="flex gap-3">
           <button 
+            onClick={() => setShowQuickCalc(!showQuickCalc)}
+            className={cn(
+              "flex items-center gap-2 px-6 py-3 border rounded-2xl font-bold transition-all shadow-sm",
+              showQuickCalc ? "bg-blue-600 border-blue-600 text-white" : "bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-50"
+            )}
+          >
+            <Calculator size={20} />
+            Quick Calc
+          </button>
+          <button 
             onClick={() => setShowRates(!showRates)}
             className="flex items-center gap-2 px-6 py-3 bg-white border border-zinc-200 text-zinc-700 rounded-2xl font-bold hover:bg-zinc-50 transition-all shadow-sm"
           >
@@ -280,7 +327,96 @@ export default function TDSTracker() {
         </div>
       </div>
 
+      {/* Summary Stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white p-6 rounded-3xl border border-zinc-100 shadow-sm">
+          <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Total Gross</p>
+          <p className="text-2xl font-black text-zinc-900">৳{stats.totalGross.toLocaleString()}</p>
+        </div>
+        <div className="bg-blue-50 p-6 rounded-3xl border border-blue-100 shadow-sm">
+          <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Total TDS</p>
+          <p className="text-2xl font-black text-blue-700">৳{stats.totalTDS.toLocaleString()}</p>
+        </div>
+        <div className="bg-amber-50 p-6 rounded-3xl border border-amber-100 shadow-sm">
+          <p className="text-[10px] font-black text-amber-400 uppercase tracking-widest">Pending Payment</p>
+          <div className="flex items-end gap-2">
+            <p className="text-2xl font-black text-amber-700">{stats.pendingCount}</p>
+            <p className="text-xs font-bold text-amber-600 mb-1">Records</p>
+          </div>
+        </div>
+        <div className="bg-emerald-50 p-6 rounded-3xl border border-emerald-100 shadow-sm">
+          <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Paid Records</p>
+          <div className="flex items-end gap-2">
+            <p className="text-2xl font-black text-emerald-700">{stats.paidCount}</p>
+            <p className="text-xs font-bold text-emerald-600 mb-1">Records</p>
+          </div>
+        </div>
+      </div>
+
       <AnimatePresence>
+        {showQuickCalc && (
+          <motion.div 
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="bg-gradient-to-br from-blue-600 to-indigo-700 p-8 rounded-[2.5rem] text-white shadow-xl shadow-blue-600/20 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32 blur-3xl pointer-events-none" />
+              <div className="relative z-10 space-y-6">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-black uppercase tracking-widest flex items-center gap-2">
+                    <Calculator size={20} /> Quick TDS Calculator
+                  </h3>
+                  <button onClick={() => setShowQuickCalc(false)} className="text-white/60 hover:text-white transition-colors">
+                    <X size={24} />
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-blue-100 uppercase tracking-widest">Gross Amount (৳)</label>
+                    <input 
+                      type="number" 
+                      value={calcGross || ''}
+                      onChange={(e) => setCalcGross(parseFloat(e.target.value) || 0)}
+                      className="w-full p-4 bg-white/10 border border-white/20 rounded-2xl outline-none focus:bg-white/20 transition-all text-white placeholder:text-white/30 text-xl font-bold"
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-blue-100 uppercase tracking-widest">Select TDS Rate / Category</label>
+                    <select 
+                      onChange={(e) => setCalcRate(parseFloat(e.target.value))}
+                      className="w-full p-4 bg-white/10 border border-white/20 rounded-2xl outline-none focus:bg-white/20 transition-all text-white text-lg font-bold appearance-none"
+                    >
+                      <option value="0" className="text-zinc-900">Choose a rate...</option>
+                      {rates.map(r => (
+                        <optgroup key={r.id} label={r.category} className="text-zinc-900 font-bold">
+                          <option value={r.rateWithTin} className="text-zinc-900">With TIN ({r.rateWithTin}%)</option>
+                          <option value={r.rateWithoutTin} className="text-zinc-900">No TIN ({r.rateWithoutTin}%)</option>
+                        </optgroup>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-blue-100 uppercase tracking-widest">Deducted TDS Amount</label>
+                    <div className="w-full p-4 bg-white text-blue-600 rounded-2xl text-xl font-black shadow-inner flex items-center justify-between">
+                      <span>৳</span>
+                      <span>{calcResult.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-4 flex items-center gap-4 text-xs font-bold text-blue-100/60 italic">
+                  <AlertCircle size={14} />
+                  <span>Calculated based on standard NBR rates. Use "New TDS Entry" to save this to your records.</span>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
         {showRates && (
           <motion.div 
             initial={{ height: 0, opacity: 0 }}
@@ -430,7 +566,7 @@ export default function TDSTracker() {
             className="overflow-hidden"
           >
             <div className="bg-white p-8 rounded-[2.5rem] border border-zinc-100 shadow-xl shadow-zinc-200/50 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div className="space-y-2">
                   <label className="text-xs font-black text-zinc-400 uppercase tracking-widest">Payee Name</label>
                   <input 
@@ -438,8 +574,21 @@ export default function TDSTracker() {
                     value={newRecord.payeeName}
                     onChange={(e) => setNewRecord({...newRecord, payeeName: e.target.value})}
                     className="w-full p-4 bg-zinc-50 border border-zinc-100 rounded-2xl focus:ring-4 focus:ring-blue-500/5 outline-none transition-all"
-                    placeholder="e.g. John Doe"
+                    placeholder="e.g. Acme Corp"
                   />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-black text-zinc-400 uppercase tracking-widest">Payee Category</label>
+                  <select 
+                    value={newRecord.payeeCategory}
+                    onChange={(e) => setNewRecord({...newRecord, payeeCategory: e.target.value})}
+                    className="w-full p-4 bg-zinc-50 border border-zinc-100 rounded-2xl focus:ring-4 focus:ring-blue-500/5 outline-none transition-all"
+                  >
+                    <option value="Company">Company</option>
+                    <option value="Individual">Individual</option>
+                    <option value="Firm">Partnership Firm</option>
+                    <option value="Association">Association of Persons</option>
+                  </select>
                 </div>
                 <div className="space-y-2">
                   <label className="text-xs font-black text-zinc-400 uppercase tracking-widest">Payee TIN</label>
@@ -449,6 +598,16 @@ export default function TDSTracker() {
                     onChange={(e) => setNewRecord({...newRecord, payeeTin: e.target.value})}
                     className="w-full p-4 bg-zinc-50 border border-zinc-100 rounded-2xl focus:ring-4 focus:ring-blue-500/5 outline-none transition-all"
                     placeholder="12-digit TIN"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-black text-zinc-400 uppercase tracking-widest">Payee BIN (Optional)</label>
+                  <input 
+                    type="text"
+                    value={newRecord.payeeBin}
+                    onChange={(e) => setNewRecord({...newRecord, payeeBin: e.target.value})}
+                    className="w-full p-4 bg-zinc-50 border border-zinc-100 rounded-2xl focus:ring-4 focus:ring-blue-500/5 outline-none transition-all"
+                    placeholder="BIN Number"
                   />
                 </div>
                 <div className="space-y-2">
@@ -569,11 +728,12 @@ export default function TDSTracker() {
                 <tr key={record.id} className="group hover:bg-zinc-50/30 transition-colors">
                   <td className="px-6 py-4">
                     <p className="font-bold text-zinc-900">{record.payeeName}</p>
-                    <p className="text-[10px] font-mono text-zinc-400">{record.payeeTin || 'No TIN'}</p>
+                    <p className="text-[10px] font-mono text-zinc-400">{record.payeeCategory} • {record.payeeTin || 'No TIN'}</p>
+                    {record.payeeBin && <p className="text-[10px] text-zinc-300">BIN: {record.payeeBin}</p>}
                   </td>
                   <td className="px-6 py-4">
                     <p className="text-sm font-medium text-zinc-700">{record.paymentType}</p>
-                    <p className="text-[10px] text-zinc-400">{record.invoiceNo || 'N/A'}</p>
+                    <p className="text-[10px] text-zinc-400">Inv: {record.invoiceNo || 'N/A'} • {record.invoiceDate}</p>
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="space-y-0.5">
@@ -584,9 +744,12 @@ export default function TDSTracker() {
                   <td className="px-6 py-4">
                     <div className="space-y-1">
                       {record.challanNo ? (
-                        <p className="text-[10px] font-bold text-emerald-600 flex items-center gap-1">
-                          <CheckCircle2 size={10} /> Challan: {record.challanNo}
-                        </p>
+                        <div className="space-y-0.5">
+                          <p className="text-[10px] font-bold text-emerald-600 flex items-center gap-1">
+                            <CheckCircle2 size={10} /> Challan: {record.challanNo}
+                          </p>
+                          <p className="text-[9px] text-emerald-400 ml-3.5">{record.bankName} - {record.bankBranch}</p>
+                        </div>
                       ) : (
                         <p className="text-[10px] text-amber-500 font-bold flex items-center gap-1">
                           <Clock size={10} /> Challan Missing

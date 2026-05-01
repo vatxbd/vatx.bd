@@ -30,6 +30,9 @@ import {
   Smartphone,
   Book,
   Share2,
+  Facebook,
+  Linkedin,
+  Music2,
   Twitter,
   Folder,
   AlertCircle,
@@ -45,6 +48,7 @@ import {
   Save,
   Pencil,
   Layout,
+  Info,
   ClipboardCheck,
   Truck,
   Anchor,
@@ -77,6 +81,7 @@ import {
   ArrowDown,
   HelpCircle,
   Cloud,
+  RefreshCw,
 } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import { motion, AnimatePresence } from 'motion/react';
@@ -196,8 +201,10 @@ import TDSTracker from './components/TDSTracker';
 import OCRFormAutomation from './components/OCRFormAutomation';
 import OCRHistory from './components/OCRHistory';
 import TRMSAssistant from './components/TRMSAssistant';
+import CorporateTaxAssistant from './components/CorporateTaxAssistant';
+import NotificationCenter from './components/NotificationCenter';
 
-type Tab = 'dashboard' | 'vat' | 'tax' | 'tariff' | 'manifest' | 'reports' | 'blog' | 'tools' | 'ai' | 'invoice' | 'history' | 'notices' | 'rebate' | 'hscode' | 'subscription' | 'crypto-tax' | 'blockchain-verify' | 'tokenized-cert' | 'tax-advisory' | 'zakat' | 'final-tax' | 'developer' | 'documents' | 'critical-vat' | 'help' | 'social' | 'base' | 'x-scraper' | 'whatsapp' | 'odoo' | 'dropbox' | 'odoo-erp' | 'erpnext' | 'vat-agents' | 'live-agent' | 'donation' | 'vds-tracker' | 'tds-tracker' | 'compliance-calendar' | 'agent-marketplace' | 'challan-verify' | 'mfs-payment' | 'trms-extractor';
+type Tab = 'dashboard' | 'vat' | 'tax' | 'tariff' | 'manifest' | 'reports' | 'blog' | 'tools' | 'ai' | 'invoice' | 'history' | 'notices' | 'rebate' | 'hscode' | 'subscription' | 'crypto-tax' | 'blockchain-verify' | 'tokenized-cert' | 'tax-advisory' | 'zakat' | 'final-tax' | 'developer' | 'documents' | 'critical-vat' | 'help' | 'social' | 'base' | 'x-scraper' | 'whatsapp' | 'odoo' | 'dropbox' | 'odoo-erp' | 'erpnext' | 'vat-agents' | 'live-agent' | 'donation' | 'vds-tracker' | 'tds-tracker' | 'compliance-calendar' | 'agent-marketplace' | 'challan-verify' | 'mfs-payment' | 'trms-extractor' | 'corporate-tax' | 'ocr-automation' | 'law-updates' | 'vat-ocr' | 'tax-ocr';
 
 interface TaxNotice {
   id: number;
@@ -223,6 +230,38 @@ export default function App() {
   const [showLiveAgent, setShowLiveAgent] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [prefilledInvoice, setPrefilledInvoice] = useState<any>(null);
+  const [isGoogleAuthenticated, setIsGoogleAuthenticated] = useState(false);
+
+  useEffect(() => {
+    checkGoogleAuth();
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'OAUTH_AUTH_SUCCESS') {
+        setIsGoogleAuthenticated(true);
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
+  const checkGoogleAuth = async () => {
+    try {
+      const res = await fetch('/api/auth/status');
+      const data = await res.json();
+      setIsGoogleAuthenticated(data.isAuthenticated);
+    } catch (e) {
+      console.error("Auth check failed", e);
+    }
+  };
+
+  const handleGoogleConnect = async () => {
+    try {
+      const res = await fetch('/auth/google/url');
+      const { url } = await res.json();
+      window.open(url, 'google_oauth', 'width=600,height=700');
+    } catch (e) {
+      console.error("Failed to get auth URL", e);
+    }
+  };
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -325,10 +364,18 @@ export default function App() {
       {/* Mobile Header */}
       <header className="fixed top-0 left-0 right-0 h-16 bg-white/80 backdrop-blur-xl border-b border-zinc-100 z-[60] flex items-center justify-between px-6 md:hidden">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-zinc-900 rounded-xl flex items-center justify-center text-white shadow-lg">
-            <ShieldCheck size={18} />
+          <div className="relative w-8 h-8 flex items-center justify-center shrink-0">
+            <div className="absolute inset-0 bg-gradient-to-br from-[#E6B93E] via-[#FFD700] to-[#B8860B] rounded-lg shadow-md" />
+            <div className="relative w-4 h-4 flex items-center justify-center">
+              <div className="absolute left-0 top-0 w-[45%] h-full bg-[#001D4A] rounded-full origin-bottom rotate-[-25deg] translate-x-0.5" />
+              <div className="absolute right-0 top-0 w-[45%] h-full bg-[#00A8E8] rounded-full origin-bottom rotate-[25deg] -translate-x-0.5" />
+            </div>
           </div>
-          <span className="text-lg font-bold tracking-tight font-display">VATX.BD</span>
+          <div className="flex items-baseline gap-0.5 font-display">
+            <span className="text-lg font-black tracking-tighter text-[#001D4A]">VAT</span>
+            <span className="text-lg font-black tracking-tighter text-[#00A8E8]">X</span>
+            <span className="text-lg font-black tracking-tighter text-zinc-400">.BD</span>
+          </div>
         </div>
         <div className="flex items-center gap-3">
           <button 
@@ -367,10 +414,18 @@ export default function App() {
             >
               <div className="p-8 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-zinc-900 rounded-2xl flex items-center justify-center text-white shadow-xl">
-                    <ShieldCheck size={22} />
+                  <div className="relative w-10 h-10 flex items-center justify-center shrink-0">
+                    <div className="absolute inset-0 bg-gradient-to-br from-[#E6B93E] via-[#FFD700] to-[#B8860B] rounded-xl shadow-md" />
+                    <div className="relative w-6 h-6 flex items-center justify-center">
+                      <div className="absolute left-0 top-0 w-[45%] h-full bg-[#001D4A] rounded-full origin-bottom rotate-[-25deg] translate-x-0.5" />
+                      <div className="absolute right-0 top-0 w-[45%] h-full bg-[#00A8E8] rounded-full origin-bottom rotate-[25deg] -translate-x-0.5" />
+                    </div>
                   </div>
-                  <span className="text-xl font-bold font-display">VATX.BD</span>
+                  <div className="flex items-baseline gap-0.5 font-display">
+                    <span className="text-xl font-black tracking-tighter text-[#001D4A]">VAT</span>
+                    <span className="text-xl font-black tracking-tighter text-[#00A8E8]">X</span>
+                    <span className="text-xl font-black tracking-tighter text-zinc-400">.BD</span>
+                  </div>
                 </div>
                 <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 text-zinc-400">
                   <X size={24} />
@@ -406,25 +461,35 @@ export default function App() {
                   </div>
 
                   <div>
-                    <p className="px-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-4">Tax & VAT Hub</p>
+                    <p className="px-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-4">{t.vatHub}</p>
                     <div className="space-y-1">
                       <NavItem icon={<Receipt size={18} />} label={t.vat} active={activeTab === 'vat'} onClick={() => { setActiveTab('vat'); setIsMobileMenuOpen(false); }} />
+                      <NavItem icon={<Calculator size={18} />} label={t.criticalVat} active={activeTab === 'critical-vat'} onClick={() => { setActiveTab('critical-vat'); setIsMobileMenuOpen(false); }} />
+                      <NavItem icon={<ClipboardCheck size={18} />} label="VDS Tracker" active={activeTab === 'vds-tracker'} onClick={() => { setActiveTab('vds-tracker'); setIsMobileMenuOpen(false); }} />
+                      <NavItem icon={<ShieldCheck size={18} />} label="Challan Verify" active={activeTab === 'challan-verify'} onClick={() => { setActiveTab('challan-verify'); setIsMobileMenuOpen(false); }} />
+                      <NavItem icon={<Building2 size={18} />} label={t.vatAgents} active={activeTab === 'vat-agents'} onClick={() => { setActiveTab('vat-agents'); setIsMobileMenuOpen(false); }} />
+                      <NavItem icon={<FileSearch size={18} />} label={t.vatOcr} active={activeTab === 'vat-ocr'} onClick={() => { setActiveTab('vat-ocr'); setIsMobileMenuOpen(false); }} />
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="px-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-4">{t.taxHub}</p>
+                    <div className="space-y-1">
                       <NavItem icon={<Calculator size={18} />} label={t.tax} active={activeTab === 'tax'} onClick={() => { setActiveTab('tax'); setIsMobileMenuOpen(false); }} />
+                      <NavItem icon={<Building2 size={18} />} label={t.corporateTax} badge="New" active={activeTab === 'corporate-tax'} onClick={() => { setActiveTab('corporate-tax'); setIsMobileMenuOpen(false); }} />
                       <NavItem icon={<FileSearch size={18} />} label={t.trmsExtractor} active={activeTab === 'trms-extractor'} onClick={() => { setActiveTab('trms-extractor'); setIsMobileMenuOpen(false); }} />
-                      <NavItem icon={<Shield size={18} />} label="চূড়ান্ত ট্যাক্স ক্যালকুলেশন" active={activeTab === 'final-tax'} onClick={() => { setActiveTab('final-tax'); setIsMobileMenuOpen(false); }} />
+                      <NavItem icon={<FileSearch size={18} />} label={t.taxOcr} active={activeTab === 'tax-ocr'} onClick={() => { setActiveTab('tax-ocr'); setIsMobileMenuOpen(false); }} />
+                      <NavItem icon={<Calculator size={18} />} label="TDS Tracker" active={activeTab === 'tds-tracker'} onClick={() => { setActiveTab('tds-tracker'); setIsMobileMenuOpen(false); }} />
+                      <NavItem icon={<Shield size={18} />} label={t.finalTax} active={activeTab === 'final-tax'} onClick={() => { setActiveTab('final-tax'); setIsMobileMenuOpen(false); }} />
                       <NavItem icon={<TrendingUp size={18} />} label={t.rebate} active={activeTab === 'rebate'} onClick={() => { setActiveTab('rebate'); setIsMobileMenuOpen(false); }} />
                       <NavItem icon={<Coins size={18} />} label={t.zakat} active={activeTab === 'zakat'} onClick={() => { setActiveTab('zakat'); setIsMobileMenuOpen(false); }} />
-                      <NavItem icon={<Calculator size={18} />} label={t.criticalVat} active={activeTab === 'critical-vat'} onClick={() => { setActiveTab('critical-vat'); setIsMobileMenuOpen(false); }} />
                     </div>
                   </div>
 
                   <div>
                     <p className="px-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-4">Compliance Suite</p>
                     <div className="space-y-1">
-                      <NavItem icon={<ClipboardCheck size={18} />} label="VDS Tracker" active={activeTab === 'vds-tracker'} onClick={() => { setActiveTab('vds-tracker'); setIsMobileMenuOpen(false); }} />
-                      <NavItem icon={<Calculator size={18} />} label="TDS Tracker" active={activeTab === 'tds-tracker'} onClick={() => { setActiveTab('tds-tracker'); setIsMobileMenuOpen(false); }} />
                       <NavItem icon={<Calendar size={18} />} label="Compliance Calendar" active={activeTab === 'compliance-calendar'} onClick={() => { setActiveTab('compliance-calendar'); setIsMobileMenuOpen(false); }} />
-                      <NavItem icon={<ShieldCheck size={18} />} label="Challan Verify" active={activeTab === 'challan-verify'} onClick={() => { setActiveTab('challan-verify'); setIsMobileMenuOpen(false); }} />
                       <NavItem icon={<Smartphone size={18} />} label={t['mfs-payment'] || "MFS Payment"} active={activeTab === 'mfs-payment'} onClick={() => { setActiveTab('mfs-payment'); setIsMobileMenuOpen(false); }} />
                     </div>
                   </div>
@@ -444,6 +509,7 @@ export default function App() {
                   <div>
                     <p className="px-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-4">Marketplace & Community</p>
                     <div className="space-y-1">
+                      <NavItem icon={<Bell size={18} className="text-amber-500" />} label={language === 'bn' ? 'আইন আপডেট' : 'Law Updates'} active={activeTab === 'law-updates'} onClick={() => { setActiveTab('law-updates'); setIsMobileMenuOpen(false); }} />
                       <NavItem icon={<Building2 size={18} />} label={t.vatAgents} active={activeTab === 'vat-agents'} onClick={() => { setActiveTab('vat-agents'); setIsMobileMenuOpen(false); }} />
                       <NavItem icon={<FileText size={18} />} label={t.blog} active={activeTab === 'blog'} onClick={() => { setActiveTab('blog'); setIsMobileMenuOpen(false); }} />
                       <NavItem icon={<Bell size={18} />} label={t.notices} active={activeTab === 'notices'} onClick={() => { setActiveTab('notices'); setIsMobileMenuOpen(false); }} />
@@ -501,11 +567,22 @@ export default function App() {
           className="p-8 flex items-center gap-3 cursor-pointer group"
           onClick={handleLogoClick}
         >
-          <div className="w-11 h-11 bg-zinc-900 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-zinc-200 rotate-3 group-hover:rotate-0 transition-transform duration-300">
-            <ShieldCheck size={24} />
+          <div className="relative w-12 h-12 flex items-center justify-center shrink-0">
+            {/* Gold Background with subtle gradient */}
+            <div className="absolute inset-0 bg-gradient-to-br from-[#E6B93E] via-[#FFD700] to-[#B8860B] rounded-2xl shadow-lg shadow-yellow-500/20 group-hover:shadow-yellow-500/40 transition-shadow duration-300 rotate-3 group-hover:rotate-0" />
+            
+            {/* Stylized V using vector bars */}
+            <div className="relative w-7 h-7 flex items-center justify-center">
+              <div className="absolute left-0 top-0 w-[45%] h-full bg-[#001D4A] rounded-full origin-bottom rotate-[-25deg] translate-x-1" />
+              <div className="absolute right-0 top-0 w-[45%] h-full bg-[#00A8E8] rounded-full origin-bottom rotate-[25deg] -translate-x-1" />
+            </div>
           </div>
           <div className="flex flex-col">
-            <span className="text-xl font-bold tracking-tight font-display">VATX.BD</span>
+            <div className="flex items-baseline gap-0.5 font-display">
+              <span className="text-xl font-black tracking-tighter text-[#001D4A]">VAT</span>
+              <span className="text-xl font-black tracking-tighter text-[#00A8E8]">X</span>
+              <span className="text-xl font-black tracking-tighter text-zinc-300">.BD</span>
+            </div>
             <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em]">{t.compliance}</span>
           </div>
         </div>
@@ -571,7 +648,7 @@ export default function App() {
           </div>
 
           <div className="py-4 border-t border-zinc-50">
-            <p className="px-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-4">Tax & VAT Hub</p>
+            <p className="px-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-4">{t.vatHub}</p>
             <NavItem 
               icon={<Receipt size={18} />} 
               label={t.vat} 
@@ -580,9 +657,50 @@ export default function App() {
             />
             <NavItem 
               icon={<Calculator size={18} />} 
+              label={t.criticalVat} 
+              active={activeTab === 'critical-vat'} 
+              onClick={() => setActiveTab('critical-vat')} 
+            />
+            <NavItem 
+              icon={<ClipboardCheck size={18} />} 
+              label="VDS Tracker" 
+              active={activeTab === 'vds-tracker'} 
+              onClick={() => setActiveTab('vds-tracker')} 
+            />
+            <NavItem 
+              icon={<ShieldCheck size={18} />} 
+              label="Challan Verify" 
+              active={activeTab === 'challan-verify'} 
+              onClick={() => setActiveTab('challan-verify')} 
+            />
+            <NavItem 
+              icon={<Building2 size={18} />} 
+              label={t.vatAgents} 
+              active={activeTab === 'vat-agents'} 
+              onClick={() => setActiveTab('vat-agents')} 
+            />
+            <NavItem 
+              icon={<FileSearch size={18} />} 
+              label={t.vatOcr} 
+              active={activeTab === 'vat-ocr'} 
+              onClick={() => setActiveTab('vat-ocr')} 
+            />
+          </div>
+
+          <div className="py-4 border-t border-zinc-50">
+            <p className="px-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-4">{t.taxHub}</p>
+            <NavItem 
+              icon={<Calculator size={18} />} 
               label={t.tax} 
               active={activeTab === 'tax'} 
               onClick={() => setActiveTab('tax')} 
+            />
+            <NavItem 
+              icon={<Building2 size={18} />} 
+              label={t.corporateTax} 
+              badge="New"
+              active={activeTab === 'corporate-tax'} 
+              onClick={() => setActiveTab('corporate-tax')} 
             />
             <NavItem 
               icon={<FileSearch size={18} />} 
@@ -591,8 +709,20 @@ export default function App() {
               onClick={() => setActiveTab('trms-extractor')} 
             />
             <NavItem 
+              icon={<FileSearch size={18} />} 
+              label={t.taxOcr} 
+              active={activeTab === 'tax-ocr'} 
+              onClick={() => setActiveTab('tax-ocr')} 
+            />
+            <NavItem 
+              icon={<Calculator size={18} />} 
+              label="TDS Tracker" 
+              active={activeTab === 'tds-tracker'} 
+              onClick={() => setActiveTab('tds-tracker')} 
+            />
+            <NavItem 
               icon={<Shield size={18} />} 
-              label="চূড়ান্ত ট্যাক্স ক্যালকুলেশন" 
+              label={t.finalTax} 
               active={activeTab === 'final-tax'} 
               onClick={() => setActiveTab('final-tax')} 
             />
@@ -608,39 +738,15 @@ export default function App() {
               active={activeTab === 'zakat'} 
               onClick={() => setActiveTab('zakat')} 
             />
-            <NavItem 
-              icon={<Calculator size={18} />} 
-              label={t.criticalVat} 
-              active={activeTab === 'critical-vat'} 
-              onClick={() => setActiveTab('critical-vat')} 
-            />
           </div>
 
           <div className="py-4 border-t border-zinc-50">
             <p className="px-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-4">Compliance Suite</p>
             <NavItem 
-              icon={<ClipboardCheck size={18} />} 
-              label="VDS Tracker" 
-              active={activeTab === 'vds-tracker'} 
-              onClick={() => setActiveTab('vds-tracker')} 
-            />
-            <NavItem 
-              icon={<Calculator size={18} />} 
-              label="TDS Tracker" 
-              active={activeTab === 'tds-tracker'} 
-              onClick={() => setActiveTab('tds-tracker')} 
-            />
-            <NavItem 
               icon={<Calendar size={18} />} 
               label="Compliance Calendar" 
               active={activeTab === 'compliance-calendar'} 
               onClick={() => setActiveTab('compliance-calendar')} 
-            />
-            <NavItem 
-              icon={<ShieldCheck size={18} />} 
-              label="Challan Verify" 
-              active={activeTab === 'challan-verify'} 
-              onClick={() => setActiveTab('challan-verify')} 
             />
             <NavItem 
               icon={<Smartphone size={18} />} 
@@ -692,6 +798,12 @@ export default function App() {
 
           <div className="py-4 border-t border-zinc-50">
             <p className="px-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-4">Marketplace & Community</p>
+            <NavItem 
+              icon={<Bell size={18} className="text-amber-500" />} 
+              label={language === 'bn' ? 'আইন আপডেট' : 'Law Updates'} 
+              active={activeTab === 'law-updates'} 
+              onClick={() => setActiveTab('law-updates')} 
+            />
             <NavItem 
               icon={<Building2 size={18} />} 
               label={t.vatAgents} 
@@ -980,9 +1092,53 @@ export default function App() {
           >
             {activeTab === 'dashboard' && <Dashboard vatHistory={vatHistory} taxHistory={taxHistory} t={t} notices={notices} language={language} />}
             {activeTab === 'vat-agents' && <VatAgentPortal />}
-            {activeTab === 'vat' && <VATCalculator onComplete={fetchHistory} />}
-            {activeTab === 'tax' && <TaxCalculator onComplete={fetchHistory} />}
+            {activeTab === 'vat' && (
+              <VATCalculator 
+                onComplete={fetchHistory} 
+                t={t} 
+                isGoogleAuthenticated={isGoogleAuthenticated} 
+                handleGoogleConnect={handleGoogleConnect} 
+              />
+            )}
+            {activeTab === 'tax' && (
+              <TaxCalculator 
+                onComplete={fetchHistory} 
+                t={t} 
+                isGoogleAuthenticated={isGoogleAuthenticated} 
+                handleGoogleConnect={handleGoogleConnect} 
+              />
+            )}
+            {activeTab === 'tax-ocr' && (
+              <OCRFormAutomation 
+                language={language} 
+                defaultCategory="INCOME_TAX"
+                onInvoiceExtracted={(data) => {
+                  setPrefilledInvoice(data);
+                  setActiveTab('invoice');
+                }} 
+              />
+            )}
+            {activeTab === 'vat-ocr' && (
+              <OCRFormAutomation 
+                language={language} 
+                defaultCategory="VAT"
+                onInvoiceExtracted={(data) => {
+                  setPrefilledInvoice(data);
+                  setActiveTab('invoice');
+                }} 
+              />
+            )}
+            {activeTab === 'ocr-automation' && (
+              <OCRFormAutomation 
+                language={language} 
+                onInvoiceExtracted={(data) => {
+                  setPrefilledInvoice(data);
+                  setActiveTab('invoice');
+                }} 
+              />
+            )}
             {activeTab === 'trms-extractor' && <TRMSAssistant />}
+            {activeTab === 'corporate-tax' && <CorporateTaxAssistant t={t} />}
             {activeTab === 'tariff' && <TariffCalculator />}
             {activeTab === 'rebate' && <TaxRebatePlanner />}
             {activeTab === 'hscode' && <HSCodeFinder />}
@@ -992,9 +1148,18 @@ export default function App() {
             {activeTab === 'invoice' && <InvoiceGenerator initialData={prefilledInvoice} />}
             {activeTab === 'blog' && <BlogView />}
             {activeTab === 'tools' && <ToolsView setActiveTab={setActiveTab} />}
-            {activeTab === 'history' && <HistoryView vatHistory={vatHistory} taxHistory={taxHistory} />}
+            {activeTab === 'history' && (
+              <HistoryView 
+                vatHistory={vatHistory} 
+                taxHistory={taxHistory} 
+                t={t} 
+                isGoogleAuthenticated={isGoogleAuthenticated}
+                handleGoogleConnect={handleGoogleConnect}
+              />
+            )}
             {activeTab === 'help' && <HelpCenter setActiveTab={setActiveTab} />}
             {activeTab === 'notices' && <NoticesView notices={notices} onRefresh={fetchNotices} />}
+            {activeTab === 'law-updates' && <NotificationCenter language={language} />}
             {activeTab === 'subscription' && <SubscriptionView />}
             {activeTab === 'crypto-tax' && <CryptoTaxAdvisory />}
             {activeTab === 'blockchain-verify' && <BlockchainVerification />}
@@ -1019,13 +1184,77 @@ export default function App() {
             {activeTab === 'donation' && <DonationCentre />}
             {activeTab === 'vds-tracker' && <VDSTracker />}
             {activeTab === 'tds-tracker' && <TDSTracker />}
-            {activeTab === 'compliance-calendar' && <ComplianceCalendar />}
+            {activeTab === 'compliance-calendar' && <ComplianceCalendar t={t} />}
             {activeTab === 'agent-marketplace' && <AgentMarketplace />}
             {activeTab === 'challan-verify' && <ChallanVerification />}
             {activeTab === 'mfs-payment' && <MFSPayment />}
           </motion.div>
         </AnimatePresence>
       </main>
+
+      {/* Persistent Footer and Developer Toggle */}
+      <footer className="md:ml-72 p-12 border-t border-zinc-100 bg-white/50 backdrop-blur-md">
+        <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-12">
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <div className="relative w-8 h-8 flex items-center justify-center shrink-0">
+                <div className="absolute inset-0 bg-gradient-to-br from-[#E6B93E] via-[#FFD700] to-[#B8860B] rounded-lg shadow-md" />
+                <div className="relative w-4 h-4 flex items-center justify-center">
+                  <div className="absolute left-0 top-0 w-[45%] h-full bg-[#001D4A] rounded-full origin-bottom rotate-[-25deg] translate-x-0.5" />
+                  <div className="absolute right-0 top-0 w-[45%] h-full bg-[#00A8E8] rounded-full origin-bottom rotate-[25deg] -translate-x-0.5" />
+                </div>
+              </div>
+              <div className="flex items-baseline gap-0.5 font-display">
+                <span className="text-lg font-black tracking-tighter text-[#001D4A]">VAT</span>
+                <span className="text-lg font-black tracking-tighter text-[#00A8E8]">X</span>
+                <span className="text-lg font-black tracking-tighter text-zinc-400">.BD</span>
+              </div>
+            </div>
+            <p className="text-xs text-zinc-500 leading-relaxed font-medium">
+              Bangladesh's most advanced AI-powered tax automation platform. Built for compliance, accuracy, and speed.
+            </p>
+          </div>
+          
+          <div className="space-y-4">
+            <h5 className="text-[10px] font-black text-zinc-900 uppercase tracking-[0.2em]">{t.vatHub}</h5>
+            <div className="grid grid-cols-1 gap-2">
+              <button onClick={() => setActiveTab('vat')} className="text-xs text-zinc-500 hover:text-zinc-900 text-left transition-colors font-medium">Calculation Engine</button>
+              <button onClick={() => setActiveTab('hscode')} className="text-xs text-zinc-500 hover:text-zinc-900 text-left transition-colors font-medium">HS Code Database</button>
+              <button onClick={() => setActiveTab('corporate-tax')} className="text-xs text-zinc-500 hover:text-zinc-900 text-left transition-colors font-medium">Corporate Solutions</button>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <h5 className="text-[10px] font-black text-zinc-900 uppercase tracking-[0.2em]">Administrative</h5>
+            <div className="grid grid-cols-1 gap-2">
+              <button 
+                onClick={() => {
+                  if (isDeveloper) {
+                    setActiveTab('developer');
+                  } else {
+                    alert("Developer Mode is hidden. Hint: Click the top-left sidebar LOGO 5 times to enable it.");
+                  }
+                }} 
+                className="text-xs text-zinc-500 hover:text-zinc-900 text-left transition-colors font-medium flex items-center gap-2 group"
+              >
+                <div className={cn("w-1.5 h-1.5 rounded-full", isDeveloper ? "bg-brand-500" : "bg-zinc-200 group-hover:bg-zinc-400")} />
+                Developer & Partner Access
+              </button>
+              <a href="https://github.com/vatxbd/erpnext" target="_blank" rel="noopener noreferrer" className="text-xs text-zinc-500 hover:text-zinc-900 text-left transition-colors font-medium">Open Source Github</a>
+              <button onClick={() => setActiveTab('subscription')} className="text-xs text-zinc-500 hover:text-zinc-900 text-left transition-colors font-medium">Licensing & Plans</button>
+            </div>
+          </div>
+        </div>
+        
+        <div className="max-w-6xl mx-auto pt-12 mt-12 border-t border-zinc-50 flex flex-col md:flex-row justify-between items-center gap-4">
+          <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">© 2026 VATX.BD • AI COMPLIANCE ENGINE</p>
+          <div className="flex items-center gap-6">
+            <button onClick={() => setLanguage(language === 'bn' ? 'en' : 'bn')} className="text-xs font-black text-zinc-400 hover:text-zinc-900 transition-colors uppercase tracking-widest">
+              {language === 'bn' ? 'ENGLISH VERSION' : 'বাংলা সংস্করণ'}
+            </button>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
@@ -1190,6 +1419,10 @@ function DocumentCentre({ language, setLanguage, onInvoiceExtracted }: { languag
           },
           {
             text: `Extract structured data from this document for Bangladesh Tax (NBR) filing. 
+            Focus on the standard NBR templates (e.g., Mushak 6.3, IT-11GA).
+            
+            CRITICAL: PRESERVE TEMPLATE FORMAT. Map the extracted values strictly to the standard field labels expected for these official NBR documents. Do not invent new labels or merge fields unnecessarily.
+            
             Focus on: 
             1. Document Type (Invoice, Mushak 6.3, Salary Certificate, Bank Statement, Tax Certificate, TDS Certificate)
             2. TIN/BIN numbers
@@ -1871,10 +2104,387 @@ function DataPoint({ label, value, icon }: { label: string, value?: string | num
   );
 }
 
+function SocialConfigUI() {
+  const [settings, setSettings] = useState<any>({
+    facebook_access_token: '',
+    facebook_page_id: '',
+    linkedin_access_token: '',
+    linkedin_person_id: '',
+    twitter_bearer_token: '',
+    tiktok_access_token: '',
+    instagram_user_id: '',
+    threads_access_token: '',
+    auto_publish_on_gen: 'false'
+  });
+  const [logs, setLogs] = useState<any[]>([]);
+  const [schedules, setSchedules] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    fetchSettings();
+    fetchLogs();
+    fetchSchedules();
+  }, []);
+
+  const fetchSettings = async () => {
+    try {
+      const res = await fetch('/api/settings');
+      const contentType = res.headers.get("content-type");
+      if (contentType && contentType.indexOf("application/json") !== -1) {
+        const data = await res.json();
+        setSettings((prev: any) => ({ ...prev, ...data }));
+      }
+    } catch (err) {
+      console.error("fetchSettings error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchLogs = async () => {
+    try {
+      const res = await fetch('/api/social/publish-logs');
+      const contentType = res.headers.get("content-type");
+      if (contentType && contentType.indexOf("application/json") !== -1) {
+        const data = await res.json();
+        setLogs(Array.isArray(data) ? data : []);
+      }
+    } catch (err) {
+      console.error("fetchLogs error:", err);
+      setLogs([]);
+    }
+  };
+
+  const fetchSchedules = async () => {
+    try {
+      const res = await fetch('/api/social/schedules');
+      const contentType = res.headers.get("content-type");
+      if (contentType && contentType.indexOf("application/json") !== -1) {
+        const data = await res.json();
+        setSchedules(Array.isArray(data) ? data : []);
+      }
+    } catch (err) {
+      console.error("fetchSchedules error:", err);
+      setSchedules([]);
+    }
+  };
+
+  const deleteSchedule = async (id: number) => {
+    if (!confirm("Are you sure you want to cancel this scheduled post?")) return;
+    try {
+      await fetch(`/api/social/schedules/${id}`, { method: 'DELETE' });
+      fetchSchedules();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const res = await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ settings })
+      });
+      if (res.ok) {
+        alert('Settings saved successfully!');
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const verifyFacebook = async () => {
+    try {
+      const res = await fetch('/api/social/verify/facebook', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          facebook_page_id: settings.facebook_page_id,
+          facebook_access_token: settings.facebook_access_token
+        })
+      });
+      
+      const contentType = res.headers.get("content-type");
+      if (contentType && contentType.indexOf("application/json") !== -1) {
+        const data = await res.json();
+        if (res.ok) {
+          alert(`Verification Successful!\nConnected Page: ${data.name}\nType: ${data.tokenType}`);
+        } else {
+          alert(`Verification Failed: ${data.error || 'Unknown error'}`);
+        }
+      } else {
+        const text = await res.text();
+        console.error("Non-JSON response:", text);
+        alert(`Verification Failed: Server returned non-JSON response (Status: ${res.status}). Check console for details.`);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Verification Failed: ' + (err instanceof Error ? err.message : 'Unknown Error'));
+    }
+  };
+
+  if (loading) return <div className="p-10 text-center animate-pulse">Loading settings...</div>;
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+      <div className="space-y-8">
+        <form onSubmit={handleSave} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Facebook Page ID</label>
+              <input 
+                type="text" 
+                value={settings.facebook_page_id}
+                onChange={e => setSettings({ ...settings, facebook_page_id: e.target.value })}
+                placeholder="1234567890"
+                className="w-full p-4 bg-zinc-50 border border-zinc-100 rounded-2xl text-sm focus:outline-none focus:border-brand-500"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Facebook Access Token</label>
+              <div className="flex gap-2">
+                <input 
+                  type="password" 
+                  value={settings.facebook_access_token}
+                  onChange={e => setSettings({ ...settings, facebook_access_token: e.target.value })}
+                  placeholder="EAAB..."
+                  className="flex-1 p-4 bg-zinc-50 border border-zinc-100 rounded-2xl text-sm focus:outline-none focus:border-brand-500"
+                />
+                <button 
+                  type="button"
+                  onClick={verifyFacebook}
+                  className="px-4 bg-zinc-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-zinc-800 transition-all border border-zinc-800 shadow-xl"
+                >
+                  Verify
+                </button>
+              </div>
+            </div>
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">LinkedIn Person ID (URN)</label>
+            <input 
+              type="text" 
+              value={settings.linkedin_person_id}
+              onChange={e => setSettings({ ...settings, linkedin_person_id: e.target.value })}
+              placeholder="ABC_123"
+              className="w-full p-4 bg-zinc-50 border border-zinc-100 rounded-2xl text-sm focus:outline-none focus:border-brand-500"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">LinkedIn Access Token</label>
+            <input 
+              type="password" 
+              value={settings.linkedin_access_token}
+              onChange={e => setSettings({ ...settings, linkedin_access_token: e.target.value })}
+              placeholder="AQV..."
+              className="w-full p-4 bg-zinc-50 border border-zinc-100 rounded-2xl text-sm focus:outline-none focus:border-brand-500"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Twitter (X) Bearer Token</label>
+            <input 
+              type="password" 
+              value={settings.twitter_bearer_token}
+              onChange={e => setSettings({ ...settings, twitter_bearer_token: e.target.value })}
+              placeholder="AAAAAAAAAAAAAAAAAAAA..."
+              className="w-full p-4 bg-zinc-50 border border-zinc-100 rounded-2xl text-sm focus:outline-none focus:border-brand-500"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">TikTok Access Token</label>
+            <input 
+              type="password" 
+              value={settings.tiktok_access_token}
+              onChange={e => setSettings({ ...settings, tiktok_access_token: e.target.value })}
+              placeholder="act.XXXXXX..."
+              className="w-full p-4 bg-zinc-50 border border-zinc-100 rounded-2xl text-sm focus:outline-none focus:border-brand-500"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Instagram User ID</label>
+            <input 
+              type="text" 
+              value={settings.instagram_user_id}
+              onChange={e => setSettings({ ...settings, instagram_user_id: e.target.value })}
+              placeholder="178414..."
+              className="w-full p-4 bg-zinc-50 border border-zinc-100 rounded-2xl text-sm focus:outline-none focus:border-brand-500"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Threads Access Token</label>
+            <input 
+              type="password" 
+              value={settings.threads_access_token}
+              onChange={e => setSettings({ ...settings, threads_access_token: e.target.value })}
+              placeholder="TH..."
+              className="w-full p-4 bg-zinc-50 border border-zinc-100 rounded-2xl text-sm focus:outline-none focus:border-brand-500"
+            />
+          </div>
+        </div>
+        
+        <div className="p-4 bg-zinc-50 rounded-2xl border border-zinc-100 flex items-center justify-between">
+          <div>
+            <p className="text-xs font-bold text-zinc-900">Auto-publish on generation</p>
+            <p className="text-[10px] text-zinc-400">Trigger social post immediately when AI generates notification</p>
+          </div>
+          <Toggle 
+            label="" 
+            checked={settings.auto_publish_on_gen === 'true'} 
+            onChange={(checked) => setSettings({ ...settings, auto_publish_on_gen: checked ? 'true' : 'false' })} 
+            compact
+          />
+        </div>
+
+        <button 
+          type="submit"
+          disabled={saving}
+          className="w-full py-4 bg-zinc-900 text-white rounded-2xl font-black hover:bg-black transition-all shadow-xl shadow-zinc-900/20 active:scale-95 flex items-center justify-center gap-2"
+        >
+          {saving ? 'Saving...' : 'Save Social Configuration'}
+        </button>
+      </form>
+
+      <div className="p-8 bg-zinc-900 rounded-[2.5rem] border border-zinc-800 text-zinc-400 space-y-4">
+        <h5 className="text-[10px] font-black text-brand-400 uppercase tracking-widest flex items-center gap-2">
+          <Info size={14} />
+          Configuration Guide
+        </h5>
+        <div className="space-y-4 text-[11px] leading-relaxed">
+          <div className="flex gap-3">
+            <span className="w-5 h-5 shrink-0 bg-brand-500/20 text-brand-400 rounded-full flex items-center justify-center font-bold">1</span>
+            <p>Access the <a href="https://developers.facebook.com/tools/explorer/" target="_blank" rel="noopener noreferrer" className="text-white underline">Graph API Explorer</a></p>
+          </div>
+          <div className="flex gap-3">
+            <span className="w-5 h-5 shrink-0 bg-brand-500/20 text-brand-400 rounded-full flex items-center justify-center font-bold">2</span>
+            <p>Select your <strong>App</strong> and choose <strong>User Token</strong> (Recommended). Add scopes: <code className="text-zinc-200">pages_manage_posts</code>, <code className="text-zinc-200">pages_read_engagement</code>, <code className="text-zinc-200">pages_show_list</code>.</p>
+          </div>
+          <div className="flex gap-3">
+            <span className="w-5 h-5 shrink-0 bg-brand-500/20 text-brand-400 rounded-full flex items-center justify-center font-bold">3</span>
+            <p>Paste the <strong>User Token</strong> here. The system will automatically exchange it for the correct Page Token when posting.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+      <div className="space-y-8">
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h5 className="text-xs font-black text-rose-500 uppercase tracking-widest flex items-center gap-2">
+              <Calendar size={14} />
+              Upcoming Schedules
+            </h5>
+            <button onClick={fetchSchedules} className="p-2 hover:bg-rose-50 rounded-lg transition-all"><RefreshCw size={14} className="text-rose-400" /></button>
+          </div>
+          <div className="max-h-[250px] overflow-y-auto space-y-2 pr-2 custom-scrollbar">
+            {(schedules || []).map(item => (
+              <div key={item.id} className="p-4 bg-rose-50/30 rounded-2xl border border-rose-100 space-y-2 group relative">
+                <div className="flex items-center justify-between">
+                  <span className="px-2 py-0.5 bg-rose-100 text-rose-600 rounded text-[8px] font-black uppercase tracking-widest">
+                    {item.platform}
+                  </span>
+                  <button 
+                    onClick={() => deleteSchedule(item.id)}
+                    className="p-1 text-rose-300 hover:text-rose-600 transition-colors"
+                    title="Cancel Schedule"
+                  >
+                    <ShieldAlert size={14} />
+                  </button>
+                </div>
+                <p className="text-[10px] text-zinc-900 line-clamp-1 font-medium">{item.postContent}</p>
+                {item.mediaUrl && (
+                  <div className="flex items-center gap-2">
+                    <div className="w-10 h-10 rounded-lg overflow-hidden border border-rose-100 bg-white">
+                      {item.mediaUrl.endsWith('.mp4') || item.mediaUrl.endsWith('.webm') ? (
+                        <Music2 size={16} className="m-auto text-rose-300 h-full w-full p-2" />
+                      ) : (
+                        <img src={item.mediaUrl} alt="Media" className="w-full h-full object-cover" />
+                      )}
+                    </div>
+                    <span className="text-[8px] text-rose-400 truncate max-w-[150px]">{item.mediaUrl}</span>
+                  </div>
+                )}
+                <div className="flex items-center justify-between">
+                  <span className="text-[8px] font-black text-rose-500 uppercase">Status: {item.status}</span>
+                  <span className="text-[8px] font-black text-zinc-400 flex items-center gap-1">
+                    <Calendar size={10} />
+                    {item.scheduledAt ? new Date(item.scheduledAt).toLocaleString() : 'N/A'}
+                  </span>
+                </div>
+              </div>
+            ))}
+            {(!schedules || schedules.length === 0) && <div className="text-center py-6 text-[10px] text-zinc-400 italic bg-zinc-50 rounded-2xl border border-dashed border-zinc-200">No scheduled posts</div>}
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h5 className="text-xs font-black text-zinc-400 uppercase tracking-widest">Recent Publishing Logs</h5>
+            <button onClick={fetchLogs} className="p-2 hover:bg-zinc-100 rounded-lg transition-all"><RefreshCw size={14} className="text-zinc-400" /></button>
+          </div>
+          <div className="max-h-[350px] overflow-y-auto space-y-2 pr-2 custom-scrollbar">
+          {(logs || []).map(log => (
+            <div key={log.id} className="p-4 bg-zinc-50 rounded-2xl border border-zinc-100 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className={cn(
+                  "px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest",
+                  log.platform === 'facebook' ? "bg-blue-100 text-blue-600" : 
+                  log.platform === 'linkedin' ? "bg-indigo-100 text-indigo-600" :
+                  log.platform === 'twitter' ? "bg-zinc-800 text-white" :
+                  log.platform === 'instagram' ? "bg-pink-100 text-pink-600" :
+                  log.platform === 'tiktok' ? "bg-zinc-900 text-white" :
+                  "bg-zinc-100 text-zinc-600"
+                )}>
+                  {log.platform}
+                </span>
+                <span className={cn(
+                  "text-[8px] font-black uppercase tracking-widest",
+                  log.status === 'success' ? "text-emerald-500" : "text-red-500"
+                )}>
+                  {log.status}
+                </span>
+              </div>
+              <p className="text-[10px] text-zinc-600 line-clamp-2">{log.postContent}</p>
+              {log.mediaUrl && (
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg overflow-hidden border border-zinc-200 bg-white">
+                    {log.mediaUrl.endsWith('.mp4') || log.mediaUrl.endsWith('.webm') ? (
+                      <Share2 size={12} className="m-auto text-zinc-300 h-full w-full p-1.5" />
+                    ) : (
+                      <img src={log.mediaUrl} alt="Media" className="w-full h-full object-cover" />
+                    )}
+                  </div>
+                  <span className="text-[8px] text-zinc-400 truncate max-w-[120px]">{log.mediaUrl}</span>
+                </div>
+              )}
+              {log.error && <p className="text-[8px] text-red-400 font-mono italic break-words">{log.error}</p>}
+              <p className="text-[8px] text-zinc-400 flex items-center justify-end">{log.createdAt ? new Date(log.createdAt).toLocaleString() : 'N/A'}</p>
+            </div>
+          ))}
+          {(!logs || logs.length === 0) && <div className="text-center py-10 text-[10px] text-zinc-400 italic">No logs found</div>}
+        </div>
+      </div>
+    </div>
+  </div>
+);
+}
+
 function DeveloperPanel({ notices, setNotices }: { notices: TaxNotice[], setNotices: (n: TaxNotice[]) => void }) {
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [newNotice, setNewNotice] = useState({ title: '', link: '', category: 'General' });
+  const [certs, setCerts] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (isAuthorized) {
+      fetchCerts();
+    }
+  }, [isAuthorized]);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -1884,6 +2494,17 @@ function DeveloperPanel({ notices, setNotices }: { notices: TaxNotice[], setNoti
       setError('');
     } else {
       setError('Invalid developer credentials');
+    }
+  };
+
+  const fetchCerts = async () => {
+    try {
+      const res = await fetch('/api/blockchain/certificates');
+      const data = await res.json();
+      setCerts(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error(err);
+      setCerts([]);
     }
   };
 
@@ -1970,25 +2591,6 @@ function DeveloperPanel({ notices, setNotices }: { notices: TaxNotice[], setNoti
     );
   }
 
-  const [newNotice, setNewNotice] = useState({ title: '', link: '', category: 'General' });
-  const [certs, setCerts] = useState<any[]>([]);
-
-  useEffect(() => {
-    if (isAuthorized) {
-      fetchCerts();
-    }
-  }, [isAuthorized]);
-
-  const fetchCerts = async () => {
-    try {
-      const res = await fetch('/api/blockchain/certificates');
-      const data = await res.json();
-      setCerts(data);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
   const updateCertStatus = async (id: number, status: string) => {
     try {
       const res = await fetch(`/api/blockchain/certificates/${id}`, {
@@ -2004,15 +2606,57 @@ function DeveloperPanel({ notices, setNotices }: { notices: TaxNotice[], setNoti
     }
   };
 
-  const addNotice = () => {
+  const addNotice = async () => {
     if (newNotice.title && newNotice.link) {
-      setNotices([{ ...newNotice, id: Date.now(), createdAt: new Date().toISOString() }, ...notices]);
-      setNewNotice({ title: '', link: '', category: 'General' });
+      try {
+        const res = await fetch('/api/notices', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newNotice)
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setNotices([data, ...notices]);
+          setNewNotice({ title: '', link: '', category: 'General' });
+        }
+      } catch (err) {
+        console.error(err);
+      }
     }
   };
 
-  const removeNotice = (id: number) => {
-    setNotices(notices.filter(n => n.id !== id));
+  const removeNotice = async (id: number) => {
+    try {
+      const res = await fetch(`/api/notices/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setNotices(notices.filter(n => n.id !== id));
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const publishToSocial = async (notice: TaxNotice, platform: string) => {
+    try {
+      const res = await fetch('/api/social/publish-now', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          platform,
+          content: `New Notice: ${notice.title} - ${notice.link} #VAT #Tax #NBR`,
+          mediaUrl: notice.link.includes('.jpg') || notice.link.includes('.png') ? notice.link : undefined
+        })
+      });
+      if (res.ok) {
+        alert(`Published to ${platform}!`);
+      } else {
+        const err = await res.json();
+        alert(`Failed: ${err.error}`);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Network error');
+    }
   };
 
   return (
@@ -2073,15 +2717,31 @@ function DeveloperPanel({ notices, setNotices }: { notices: TaxNotice[], setNoti
           <div className="space-y-6">
             <h4 className="text-lg font-black font-display flex items-center gap-2">
               <History size={20} className="text-brand-500" />
-              Current Notices ({notices.length})
+              Current Notices ({(notices || []).length})
             </h4>
             <div className="max-h-[400px] overflow-y-auto space-y-3 pr-2 custom-scrollbar">
-              {notices.map(notice => (
+              {(notices || []).map(notice => (
                 <div key={notice.id} className="flex items-center justify-between p-5 bg-zinc-50 rounded-3xl border border-zinc-100 group hover:bg-white hover:shadow-xl hover:shadow-zinc-200/50 transition-all">
                   <div className="flex flex-col">
                     <span className="text-[10px] font-black text-brand-600 uppercase tracking-widest mb-1">{notice.category}</span>
                     <p className="font-black text-sm text-zinc-900 line-clamp-1">{notice.title}</p>
-                    <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mt-1">{new Date(notice.createdAt).toLocaleDateString()}</p>
+                    <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mt-1">{notice.createdAt ? new Date(notice.createdAt).toLocaleDateString() : 'N/A'}</p>
+                    <div className="flex items-center gap-2 mt-2">
+                      <button 
+                        onClick={() => publishToSocial(notice, 'facebook')}
+                        className="p-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-all text-[8px] font-black uppercase tracking-widest flex items-center gap-1"
+                        title="Publish to Facebook"
+                      >
+                        <Facebook size={12} /> FB
+                      </button>
+                      <button 
+                        onClick={() => publishToSocial(notice, 'linkedin')}
+                        className="p-1.5 bg-sky-50 text-sky-600 rounded-lg hover:bg-sky-100 transition-all text-[8px] font-black uppercase tracking-widest flex items-center gap-1"
+                        title="Publish to LinkedIn"
+                      >
+                        <Linkedin size={12} /> LI
+                      </button>
+                    </div>
                   </div>
                   <button 
                     onClick={() => removeNotice(notice.id)} 
@@ -2091,11 +2751,19 @@ function DeveloperPanel({ notices, setNotices }: { notices: TaxNotice[], setNoti
                   </button>
                 </div>
               ))}
-              {notices.length === 0 && (
+              {(!notices || notices.length === 0) && (
                 <div className="p-10 text-center text-zinc-400 italic text-sm">No notices available</div>
               )}
             </div>
           </div>
+        </div>
+
+        <div className="mt-12 pt-12 border-t border-zinc-100">
+          <h4 className="text-lg font-black font-display flex items-center gap-2 mb-8">
+            <Share2 size={20} className="text-brand-500" />
+            Social Media Automation Settings
+          </h4>
+          <SocialConfigUI />
         </div>
 
         <div className="mt-12 pt-12 border-t border-zinc-100">
@@ -2155,7 +2823,7 @@ function DeveloperPanel({ notices, setNotices }: { notices: TaxNotice[], setNoti
                 </tr>
               </thead>
               <tbody>
-                {certs.map(cert => (
+                {(certs || []).map(cert => (
                   <tr key={cert.id} className="bg-zinc-50 hover:bg-zinc-100 transition-all group">
                     <td className="px-6 py-4 rounded-l-2xl border-y border-l border-zinc-100">
                       <span className="font-mono text-xs font-black text-zinc-900">{cert.tokenId}</span>
@@ -2167,7 +2835,7 @@ function DeveloperPanel({ notices, setNotices }: { notices: TaxNotice[], setNoti
                       <span className="px-2 py-1 bg-zinc-200 text-zinc-600 text-[8px] font-black uppercase tracking-widest rounded">{cert.certType}</span>
                     </td>
                     <td className="px-6 py-4 border-y border-zinc-100">
-                      <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">{new Date(cert.issueDate).toLocaleDateString()}</span>
+                      <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">{cert.issueDate ? new Date(cert.issueDate).toLocaleDateString() : 'N/A'}</span>
                     </td>
                     <td className="px-6 py-4 border-y border-zinc-100">
                       <span className={`px-2 py-1 rounded text-[8px] font-black uppercase tracking-widest ${
@@ -2189,7 +2857,7 @@ function DeveloperPanel({ notices, setNotices }: { notices: TaxNotice[], setNoti
                     </td>
                   </tr>
                 ))}
-                {certs.length === 0 && (
+                {(!certs || certs.length === 0) && (
                   <tr>
                     <td colSpan={6} className="px-6 py-12 text-center text-zinc-400 italic text-sm bg-zinc-50 rounded-2xl border border-zinc-100">
                       No tokenized certificates issued yet.
@@ -2517,7 +3185,12 @@ function StatCard({ icon, label, value, trend, color, description, delay = 0 }: 
   );
 }
 
-function VATCalculator({ onComplete }: { onComplete: () => void }) {
+function VATCalculator({ onComplete, t, isGoogleAuthenticated, handleGoogleConnect }: { 
+  onComplete: () => void, 
+  t: any,
+  isGoogleAuthenticated: boolean,
+  handleGoogleConnect: () => void
+}) {
   const [amount, setAmount] = useState('');
   const [rate, setRate] = useState('15');
   const [includeVAT, setIncludeVAT] = useState(false);
@@ -2528,6 +3201,7 @@ function VATCalculator({ onComplete }: { onComplete: () => void }) {
   const [loading, setLoading] = useState(false);
   const [label, setLabel] = useState('');
   const [saving, setSaving] = useState(false);
+  const [isSavingToDrive, setIsSavingToDrive] = useState(false);
 
   const calculate = async () => {
     setLoading(true);
@@ -2570,6 +3244,47 @@ function VATCalculator({ onComplete }: { onComplete: () => void }) {
       console.error(err);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const saveToDrive = async () => {
+    if (!isGoogleAuthenticated) {
+      handleGoogleConnect();
+      return;
+    }
+
+    setIsSavingToDrive(true);
+    try {
+      const content = `VAT Calculation Result
+Date: ${new Date().toLocaleString()}
+Label: ${label || 'Untitled'}
+Base Amount: ${result.baseAmount}
+VAT Rate: ${result.rate}%
+VAT Amount: ${result.vatAmount}
+Total Amount: ${result.totalAmount}
+`;
+
+      const res = await fetch('/api/drive/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content,
+          fileName: `VAT_Calculation_${Date.now()}.txt`,
+          mimeType: 'text/plain'
+        })
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        alert(`${t.saveSuccess} ${t.viewFile}: ${data.link}`);
+      } else {
+        throw new Error(data.error);
+      }
+    } catch (e) {
+      console.error("Save to Drive failed", e);
+      alert(t.saveFailed);
+    } finally {
+      setIsSavingToDrive(false);
     }
   };
 
@@ -2717,6 +3432,23 @@ function VATCalculator({ onComplete }: { onComplete: () => void }) {
                       >
                         {saving ? <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin" /> : <Save size={24} />}
                       </button>
+                      <button 
+                        onClick={saveToDrive}
+                        disabled={isSavingToDrive || !result}
+                        className={cn(
+                          "w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg transition-all active:scale-95 disabled:opacity-50",
+                          isGoogleAuthenticated 
+                            ? "bg-blue-500 hover:bg-blue-600 text-white shadow-blue-500/20" 
+                            : "bg-zinc-700 hover:bg-zinc-800 text-white shadow-zinc-700/20"
+                        )}
+                        title={isGoogleAuthenticated ? t.saveToDrive : t.connectDrive}
+                      >
+                        {isSavingToDrive ? (
+                          <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <Cloud size={24} />
+                        )}
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -2749,13 +3481,19 @@ function ResultRow({ label, value, highlight, large }: { label: string, value: n
   );
 }
 
-function TaxCalculator({ onComplete }: { onComplete: () => void }) {
+function TaxCalculator({ onComplete, t, isGoogleAuthenticated, handleGoogleConnect }: { 
+  onComplete: () => void, 
+  t: any,
+  isGoogleAuthenticated: boolean,
+  handleGoogleConnect: () => void
+}) {
   const [income, setIncome] = useState('');
   const [entityType, setEntityType] = useState<'individual' | 'corporate'>('individual');
   const [result, setResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [label, setLabel] = useState('');
   const [saving, setSaving] = useState(false);
+  const [isSavingToDrive, setIsSavingToDrive] = useState(false);
 
   const calculate = async () => {
     setLoading(true);
@@ -2794,6 +3532,47 @@ function TaxCalculator({ onComplete }: { onComplete: () => void }) {
       console.error(err);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const saveToDrive = async () => {
+    if (!isGoogleAuthenticated) {
+      handleGoogleConnect();
+      return;
+    }
+
+    setIsSavingToDrive(true);
+    try {
+      const content = `Income Tax Calculation Result
+Date: ${new Date().toLocaleString()}
+Label: ${label || 'Untitled'}
+Total Income: ${result.totalIncome}
+Taxable Income: ${result.taxableIncome}
+Tax Liability: ${result.totalTaxLiability}
+Effective Rate: ${result.effectiveRate}%
+`;
+
+      const res = await fetch('/api/drive/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content,
+          fileName: `Tax_Calculation_${Date.now()}.txt`,
+          mimeType: 'text/plain'
+        })
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        alert(`${t.saveSuccess} ${t.viewFile}: ${data.link}`);
+      } else {
+        throw new Error(data.error);
+      }
+    } catch (e) {
+      console.error("Save to Drive failed", e);
+      alert(t.saveFailed);
+    } finally {
+      setIsSavingToDrive(false);
     }
   };
 
@@ -2926,6 +3705,23 @@ function TaxCalculator({ onComplete }: { onComplete: () => void }) {
                       >
                         {saving ? <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin" /> : <Save size={24} />}
                       </button>
+                      <button 
+                        onClick={saveToDrive}
+                        disabled={isSavingToDrive || !result}
+                        className={cn(
+                          "w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg transition-all active:scale-95 disabled:opacity-50",
+                          isGoogleAuthenticated 
+                            ? "bg-blue-500 hover:bg-blue-600 text-white shadow-blue-500/20" 
+                            : "bg-zinc-700 hover:bg-zinc-800 text-white shadow-zinc-700/20"
+                        )}
+                        title={isGoogleAuthenticated ? t.saveToDrive : t.connectDrive}
+                      >
+                        {isSavingToDrive ? (
+                          <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <Cloud size={24} />
+                        )}
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -2953,7 +3749,13 @@ function TaxCalculator({ onComplete }: { onComplete: () => void }) {
   );
 }
 
-function HistoryView({ vatHistory, taxHistory }: { vatHistory: any[], taxHistory: any[] }) {
+function HistoryView({ vatHistory, taxHistory, t, isGoogleAuthenticated, handleGoogleConnect }: { 
+  vatHistory: any[], 
+  taxHistory: any[], 
+  t: any,
+  isGoogleAuthenticated: boolean,
+  handleGoogleConnect: () => void
+}) {
   const [filterCategory, setFilterCategory] = useState('All');
   const [filterDateStart, setFilterDateStart] = useState('');
   const [filterDateEnd, setFilterDateEnd] = useState('');
@@ -2961,39 +3763,7 @@ function HistoryView({ vatHistory, taxHistory }: { vatHistory: any[], taxHistory
   const [sortBy, setSortBy] = useState<'date' | 'amount'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [showFilters, setShowFilters] = useState(false);
-  const [isGoogleAuthenticated, setIsGoogleAuthenticated] = useState(false);
   const [isSavingToDrive, setIsSavingToDrive] = useState(false);
-
-  useEffect(() => {
-    checkGoogleAuth();
-    const handleMessage = (event: MessageEvent) => {
-      if (event.data?.type === 'OAUTH_AUTH_SUCCESS') {
-        setIsGoogleAuthenticated(true);
-      }
-    };
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
-  }, []);
-
-  const checkGoogleAuth = async () => {
-    try {
-      const res = await fetch('/api/auth/status');
-      const data = await res.json();
-      setIsGoogleAuthenticated(data.isAuthenticated);
-    } catch (e) {
-      console.error("Auth check failed", e);
-    }
-  };
-
-  const handleGoogleConnect = async () => {
-    try {
-      const res = await fetch('/auth/google/url');
-      const { url } = await res.json();
-      window.open(url, 'google_oauth', 'width=600,height=700');
-    } catch (e) {
-      console.error("Failed to get auth URL", e);
-    }
-  };
 
   const saveToDrive = async () => {
     if (!isGoogleAuthenticated) {
@@ -3023,13 +3793,13 @@ function HistoryView({ vatHistory, taxHistory }: { vatHistory: any[], taxHistory
 
       const data = await res.json();
       if (data.success) {
-        alert(`Successfully saved to Google Drive! View here: ${data.link}`);
+        alert(`${t.saveSuccess} ${t.viewFile}: ${data.link}`);
       } else {
         throw new Error(data.error);
       }
     } catch (e) {
       console.error("Save to Drive failed", e);
-      alert("Failed to save to Google Drive. Please try again.");
+      alert(t.saveFailed);
     } finally {
       setIsSavingToDrive(false);
     }
@@ -3116,7 +3886,7 @@ function HistoryView({ vatHistory, taxHistory }: { vatHistory: any[], taxHistory
               ) : (
                 <Cloud size={16} />
               )}
-              {isGoogleAuthenticated ? "Save to Drive" : "Connect Drive"}
+              {isGoogleAuthenticated ? t.saveToDrive : t.connectDrive}
             </button>
           </div>
         </div>
@@ -7284,9 +8054,10 @@ function TokenizedCertificates() {
     try {
       const res = await fetch('/api/blockchain/certificates');
       const data = await res.json();
-      setCerts(data);
+      setCerts(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error(err);
+      setCerts([]);
     }
   };
 

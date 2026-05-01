@@ -1,5 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { validateBIN, validateAmount, validateDate } from "../utils/validation";
+import { useHistoryState } from "../lib/useHistoryState";
+import { Undo2, Redo2 } from "lucide-react";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 const fmt = (n: number) => Number(n || 0).toLocaleString("en-BD", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -34,7 +36,7 @@ const Field = ({ label, children, refSource, required }: { label: string, childr
 const Input = ({ value, onChange, placeholder, type = "text", style = {}, error }: { value: any, onChange: (v: string) => void, placeholder?: string, type?: string, style?: any, error?: string }) => (
   <div style={{ width: "100%" }}>
     <input
-      type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
+      type={type} value={value ?? ""} onChange={e => onChange(e.target.value)} placeholder={placeholder}
       style={{
         width: "100%", background: "rgba(255,255,255,0.04)", border: `1px solid ${error ? "#EF4444" : "rgba(255,255,255,0.1)"}`,
         borderRadius: 6, padding: "8px 11px", color: "#E2E8F0", fontSize: 12, fontFamily: "inherit",
@@ -82,11 +84,17 @@ const RemoveBtn = ({ onClick }: { onClick: () => void }) => (
 
 // ── main form ─────────────────────────────────────────────────────────────────
 export default function Mushak91Form() {
-  // Section A — Taxpayer Info
-  const [taxpayer, setTaxpayer] = useState({
-    name: "", bin: "", address: "", taxPeriodMonth: "March", taxPeriodYear: "2026",
-    preparedBy: "", prepDate: "", carryForward: "", tcRef: "", returnType: "Original"
+  const [formState, setFormState, { undo, redo, canUndo, canRedo }] = useHistoryState({
+    taxpayer: {
+      name: "", bin: "", address: "", taxPeriodMonth: "March", taxPeriodYear: "2026",
+      preparedBy: "", prepDate: "", carryForward: "", tcRef: "", returnType: "Original"
+    },
+    supplies: [emptySupply()],
+    purchases: [emptyPurchase()],
+    vds: { amount: "", ref: "§ 71, VAT Act 2012" }
   });
+
+  const { taxpayer, supplies, purchases, vds } = formState;
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -108,15 +116,6 @@ export default function Mushak91Form() {
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
-
-  // Section B — Supplies (Output VAT)
-  const [supplies, setSupplies] = useState([emptySupply()]);
-
-  // Section C — Purchases (ITC)
-  const [purchases, setPurchases] = useState([emptyPurchase()]);
-
-  // Section D — Withholding (VDS)
-  const [vds, setVds] = useState({ amount: "", ref: "§ 71, VAT Act 2012" });
 
   // UI
   const [activeSection, setActiveSection] = useState("info");
@@ -141,12 +140,7 @@ export default function Mushak91Form() {
         inputTaxCreditTotal: totalEligibleITC,
         vdsTotal: vdsAmount,
         netPayable: netPayable,
-        formData: {
-          taxpayer,
-          supplies,
-          purchases,
-          vds
-        }
+        formData: formState
       };
       
       const res = await fetch('/api/mushak91', {
@@ -189,17 +183,80 @@ export default function Mushak91Form() {
   const netPayable  = Math.max(0, totalOutputVAT - totalEligibleITC - vdsAmount - carryFwd);
   const excessCredit = Math.max(0, totalEligibleITC + vdsAmount + carryFwd - totalOutputVAT);
 
-  // ── supply row ───────────────────────────────────────────────────────────────
-  const updateSupply = (id: number, field: string, val: string) =>
-    setSupplies(prev => prev.map(r => r.id === id ? { ...r, [field]: val } : r));
-  const addSupply = () => setSupplies(p => [...p, emptySupply()]);
-  const removeSupply = (id: number) => setSupplies(p => p.filter(r => r.id !== id));
+  // ── helpers to update unified state ──
+  const setTaxpayerField = (field: string, val: string) => {
+    setFormState(prev => ({
+      ...prev,
+      taxpayer: { ...prev.taxpayer, [field]: val }
+    }));
+  };
 
-  // ── purchase row ─────────────────────────────────────────────────────────────
-  const updatePurchase = (id: number, field: string, val: string) =>
-    setPurchases(prev => prev.map(r => r.id === id ? { ...r, [field]: val } : r));
-  const addPurchase = () => setPurchases(p => [...p, emptyPurchase()]);
-  const removePurchase = (id: number) => setPurchases(p => p.filter(r => r.id !== id));
+  const updateSupply = (id: number, field: string, val: string) => {
+    setFormState(prev => ({
+      ...prev,
+      supplies: prev.supplies.map(r => r.id === id ? { ...r, [field]: val } : r)
+    }));
+  };
+
+  const addSupply = () => {
+    setFormState(prev => ({
+      ...prev,
+      supplies: [...prev.supplies, emptySupply()]
+    }));
+  };
+
+  const removeSupply = (id: number) => {
+    setFormState(prev => ({
+      ...prev,
+      supplies: prev.supplies.filter(r => r.id !== id)
+    }));
+  };
+
+  const updatePurchase = (id: number, field: string, val: string) => {
+    setFormState(prev => ({
+      ...prev,
+      purchases: prev.purchases.map(r => r.id === id ? { ...r, [field]: val } : r)
+    }));
+  };
+
+  const addPurchase = () => {
+    setFormState(prev => ({
+      ...prev,
+      purchases: [...prev.purchases, emptyPurchase()]
+    }));
+  };
+
+  const removePurchase = (id: number) => {
+    setFormState(prev => ({
+      ...prev,
+      purchases: prev.purchases.filter(r => r.id !== id)
+    }));
+  };
+
+  const setVdsField = (field: string, val: string) => {
+    setFormState(prev => ({
+      ...prev,
+      vds: { ...prev.vds, [field]: val }
+    }));
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+        if (e.shiftKey) {
+          redo();
+        } else {
+          undo();
+        }
+        e.preventDefault();
+      } else if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
+        redo();
+        e.preventDefault();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [undo, redo]);
 
   const SECTIONS = [
     { id: "info",     label: "Taxpayer Info",   icon: "🏢", color: "#0369A1" },
@@ -224,6 +281,36 @@ export default function Mushak91Form() {
         input:focus, select:focus, textarea:focus { border-color: rgba(255,255,255,0.25) !important; }
         select option { background: #0E1628; }
       `}</style>
+
+      {/* Control Bar */}
+      <div style={{ maxWidth: 820, margin: "0 auto 12px", display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+        <button 
+          onClick={undo} 
+          disabled={!canUndo}
+          style={{ 
+            background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', 
+            padding: '4px 12px', borderRadius: 8, color: canUndo ? '#fff' : '#475569', 
+            cursor: canUndo ? 'pointer' : 'default', display: 'flex', alignItems: 'center', gap: 6,
+            fontSize: 11, fontWeight: 500, transition: 'all 0.2s', outline: 'none'
+          }}
+          title="Undo (Ctrl+Z)"
+        >
+          <Undo2 size={14} /> Undo
+        </button>
+        <button 
+          onClick={redo} 
+          disabled={!canRedo}
+          style={{ 
+            background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', 
+            padding: '4px 12px', borderRadius: 8, color: canRedo ? '#fff' : '#475569', 
+            cursor: canRedo ? 'pointer' : 'default', display: 'flex', alignItems: 'center', gap: 6,
+            fontSize: 11, fontWeight: 500, transition: 'all 0.2s', outline: 'none'
+          }}
+          title="Redo (Ctrl+Y / Ctrl+Shift+Z)"
+        >
+          <Redo2 size={14} /> Redo
+        </button>
+      </div>
 
       {/* Title */}
       <div style={{ maxWidth: 820, margin: "0 auto 20px" }}>
@@ -278,34 +365,34 @@ export default function Mushak91Form() {
               <SectionHeader icon="🏢" label="Section I — Taxpayer & Period Information" color="#0369A1" />
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 <Field label="Registered Name / Trade Name" required refSource="§ 9, VAT Act 2012">
-                  <Input value={taxpayer.name} onChange={v => setTaxpayer(p => ({ ...p, name: v }))} placeholder="e.g. Rahimafrooz Bangladesh Ltd." error={errors.name} />
+                  <Input value={taxpayer.name} onChange={v => setTaxpayerField("name", v)} placeholder="e.g. Rahimafrooz Bangladesh Ltd." error={errors.name} />
                 </Field>
                 <Field label="Business Identification Number (BIN)" required refSource="§ 9, VAT Act 2012">
-                  <Input value={taxpayer.bin} onChange={v => setTaxpayer(p => ({ ...p, bin: v }))} placeholder="e.g. 002156789-0101" error={errors.bin} />
+                  <Input value={taxpayer.bin} onChange={v => setTaxpayerField("bin", v)} placeholder="e.g. 002156789-0101" error={errors.bin} />
                 </Field>
                 <div style={{ gridColumn: "1 / -1" }}>
                   <Field label="Registered Business Address" refSource="Rule 12, VAT Rules 2016">
-                    <Input value={taxpayer.address} onChange={v => setTaxpayer(p => ({ ...p, address: v }))} placeholder="Full address as per VAT registration" />
+                    <Input value={taxpayer.address} onChange={v => setTaxpayerField("address", v)} placeholder="Full address as per VAT registration" />
                   </Field>
                 </div>
                 <Field label="Tax Period — Month" required refSource="§ 28, VAT Act 2012">
-                  <Select value={taxpayer.taxPeriodMonth} onChange={v => setTaxpayer(p => ({ ...p, taxPeriodMonth: v }))} options={MONTHS} />
+                  <Select value={taxpayer.taxPeriodMonth} onChange={v => setTaxpayerField("taxPeriodMonth", v)} options={MONTHS} />
                 </Field>
                 <Field label="Tax Period — Year" required refSource="§ 28, VAT Act 2012">
-                  <Select value={taxpayer.taxPeriodYear} onChange={v => setTaxpayer(p => ({ ...p, taxPeriodYear: v }))} options={YEARS} />
+                  <Select value={taxpayer.taxPeriodYear} onChange={v => setTaxpayerField("taxPeriodYear", v)} options={YEARS} />
                 </Field>
                 <Field label="Return Type" required refSource="Rule 34, VAT Rules 2016">
-                  <Select value={taxpayer.returnType} onChange={v => setTaxpayer(p => ({ ...p, returnType: v }))} options={["Original", "Amended", "Additional"]} />
+                  <Select value={taxpayer.returnType} onChange={v => setTaxpayerField("returnType", v)} options={["Original", "Amended", "Additional"]} />
                 </Field>
                 <Field label="Carried Forward Credit (from prior month)" refSource="§ 52(3), VAT Act 2012">
-                  <Input value={taxpayer.carryForward} onChange={v => setTaxpayer(p => ({ ...p, carryForward: v }))} placeholder="৳ 0.00" type="number" error={errors.carryForward} />
+                  <Input value={taxpayer.carryForward} onChange={v => setTaxpayerField("carryForward", v)} placeholder="৳ 0.00" type="number" error={errors.carryForward} />
                 </Field>
                 <Field label="Return Prepared By (Lawyer / Firm Name)" refSource="Professional obligation">
-                  <Input value={taxpayer.preparedBy} onChange={v => setTaxpayer(p => ({ ...p, preparedBy: v }))} placeholder="NBR Certified Tax Lawyer name" />
+                  <Input value={taxpayer.preparedBy} onChange={v => setTaxpayerField("preparedBy", v)} placeholder="NBR Certified Tax Lawyer name" />
                 </Field>
                 <div style={{ gridColumn: "1 / -1" }}>
                   <Field label="Date of Preparation" required>
-                    <Input value={taxpayer.prepDate} onChange={v => setTaxpayer(p => ({ ...p, prepDate: v }))} type="date" error={errors.prepDate} />
+                    <Input value={taxpayer.prepDate} onChange={v => setTaxpayerField("prepDate", v)} type="date" error={errors.prepDate} />
                   </Field>
                 </div>
               </div>
@@ -442,10 +529,10 @@ export default function Mushak91Form() {
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 <Field label="Total VDS Deducted & Deposited (৳)" refSource="§ 71, VAT Act 2012; SRO on VDS">
-                  <Input value={vds.amount} onChange={v => setVds(p => ({ ...p, amount: v }))} placeholder="৳ 0.00" type="number" />
+                  <Input value={vds.amount} onChange={v => setVdsField("amount", v)} placeholder="৳ 0.00" type="number" />
                 </Field>
                 <Field label="Treasury Challan (T.C.) Reference" refSource="Rule 47, VAT Rules 2016">
-                  <Input value={taxpayer.tcRef || ""} onChange={v => setTaxpayer(p => ({ ...p, tcRef: v }))} placeholder="T.C. No. and date" />
+                  <Input value={taxpayer.tcRef || ""} onChange={v => setTaxpayerField("tcRef", v)} placeholder="T.C. No. and date" />
                 </Field>
               </div>
               <div style={{ marginTop: 8, padding: "8px 12px", background: "rgba(255,255,255,0.03)", borderRadius: 6, fontSize: 11, color: "#64748B", lineHeight: 1.7 }}>
